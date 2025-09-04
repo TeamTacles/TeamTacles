@@ -16,6 +16,6 @@ public class ModelMapperConfiguration {
                 .setSkipNullEnabled(true)
                 .setMatchingStrategy(MatchingStrategies.STRICT);
 
-        return new ModelMapper();
+        return modelMapper;
     }
 }

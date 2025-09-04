@@ -15,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.InputMismatchException;
 import java.util.Set;
 
 @Service
@@ -66,20 +67,40 @@ public class UserService {
     }
 
     public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
-        modelMapper.map(userRequestDTO, user);
-
-        if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isBlank()) {
-            passwordMatchValidator.validate(userRequestDTO.getPassword(), userRequestDTO.getPasswordConfirm());
-
-            if (isSameAsCurrentPassword(userRequestDTO.getPassword(), user.getPassword())) {
-                throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
-            }
-
-            user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank()) {
+            user.setUsername(userRequestDTO.getUsername());
         }
+
+        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
+            user.setEmail(userRequestDTO.getEmail());
+        }
+
+        handlePasswordUpdate(userRequestDTO, user);
 
         User updatedUser = userRepository.save(user);
         return modelMapper.map(updatedUser, UserResponseDTO.class);
+    }
+
+    private void handlePasswordUpdate(UserRequestUpdateDTO userRequestDTO, User user) {
+        String newPassword = userRequestDTO.getPassword();
+        String passwordConfirm = userRequestDTO.getPasswordConfirm();
+
+        if ((newPassword != null && !newPassword.isBlank()) ||
+                (passwordConfirm != null && !passwordConfirm.isBlank()))  {
+
+            if (newPassword == null || newPassword.isBlank() ||
+                    passwordConfirm == null || passwordConfirm.isBlank()) {
+                throw new IllegalArgumentException("To change the password, you must provide both the new password and its confirmation.");
+            }
+
+            passwordMatchValidator.validate(newPassword, passwordConfirm);
+
+            if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
+                throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
+            }
+
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
     }
 
     public void deleteUser(User user){
