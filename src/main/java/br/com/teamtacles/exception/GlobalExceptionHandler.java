@@ -130,4 +130,12 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error", genericErrorMessage);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
+
+    @ExceptionHandler(SameAsCurrentPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleSameAsCurrentPasswordException(Exception ex) {
+        logger.warn("Attempt to set the same password as current: {}", ex.getMessage());
+        String genericErrorMessage = "The new password cannot be the same as your current password.";
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid Password", genericErrorMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
 }

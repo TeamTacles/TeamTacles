@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRequestDTO {
+public class UserRequestRegisterDTO {
 
     @Size(max = 50, message = "The username must not exceed 50 characters")
     @NotBlank(message = "The name cannot be blank!")
