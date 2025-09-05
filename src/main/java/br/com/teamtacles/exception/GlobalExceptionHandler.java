@@ -25,117 +25,108 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation error", errorMessage);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        logger.warn("Validation error: {}", errorMessage);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation error", errorMessage);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
-
-        String typeName = Optional.ofNullable(ex.getRequiredType()) // "Empacota" o resultado, que pode ser nulo
+        String typeName = Optional.ofNullable(ex.getRequiredType())
                 .map(Class::getSimpleName)
                 .orElse("a valid type");
-
         String message = String.format("The parameter '%s' must be of type '%s'.", ex.getName(), typeName);
 
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid parameter type", message);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        logger.warn("Invalid parameter type: {}", message, ex);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid parameter type", message);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        logger.warn("Invalid JSON format received.", ex);
         String genericErrorMessage = "Invalid JSON format. Please check your request body.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid JSON Format", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        logger.warn("Invalid JSON format received.", ex);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid JSON Format", genericErrorMessage);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         logger.warn("Invalid argument provided.", ex);
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid Parameter Value", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Parameter Value", ex.getMessage());
     }
 
     @ExceptionHandler(UsernameAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
         logger.warn("Attempt to create an already existing username: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.CONFLICT.value(), "Username already exists", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildErrorResponse(HttpStatus.CONFLICT, "Username already exists", ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
-        logger.warn("Authentication failed due to bad credentials: {}", ex.getMessage());
         String genericErrorMessage = "Invalid email or password. Please try again.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Authentication Failed", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        logger.warn("Authentication failed due to bad credentials: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Authentication Failed", genericErrorMessage);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
         logger.warn("Attempt to create an already existing email: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.CONFLICT.value(), "Email already exists", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildErrorResponse(HttpStatus.CONFLICT, "Email already exists", ex.getMessage());
     }
 
     @ExceptionHandler(PasswordMismatchException.class)
     public ResponseEntity<ErrorResponse> handlePasswordMismatchException(PasswordMismatchException ex) {
         logger.warn("Password Mismatch: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Password mismatch", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Password mismatch", ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
         logger.warn("Resource Not Found: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "Resource not found", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
         logger.warn("Resource Already Exists: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.CONFLICT.value(), "Resource already exists", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildErrorResponse(HttpStatus.CONFLICT, "Resource already exists", ex.getMessage());
     }
 
     @ExceptionHandler(InvalidTaskStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTaskStateException(InvalidTaskStateException ex) {
         logger.warn("Invalid Task State modification attempt: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.CONFLICT.value(), "Resource cannot be modified", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildErrorResponse(HttpStatus.CONFLICT, "Resource cannot be modified", ex.getMessage());
+    }
+
+    @ExceptionHandler(SameAsCurrentPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleSameAsCurrentPasswordException(SameAsCurrentPasswordException ex) {
+        String genericErrorMessage = "The new password cannot be the same as your current password.";
+        logger.warn("Attempt to set the same password as current: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Password", genericErrorMessage);
     }
 
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationCredentialsNotFoundException(AuthenticationCredentialsNotFoundException ex) {
-        logger.warn("Authentication credentials not found for the request.", ex);
         String genericErrorMessage = "Invalid or missing authentication credentials. Please log in.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Unauthorized - User Not Authenticated", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        logger.warn("Authentication credentials not found for the request.", ex);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized - User Not Authenticated", genericErrorMessage);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
-        logger.warn("Access denied for the request.", ex);
         String genericErrorMessage = "You do not have permission to access this resource.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Access Forbidden", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        logger.warn("Access denied for the request.", ex);
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Forbidden", genericErrorMessage);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-        logger.error("Internal Server Error: ", ex);
         String genericErrorMessage = "An unexpected error occurred. Please try again later.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        logger.error("Internal Server Error: ", ex);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", genericErrorMessage);
     }
 
-    @ExceptionHandler(SameAsCurrentPasswordException.class)
-    public ResponseEntity<ErrorResponse> handleSameAsCurrentPasswordException(Exception ex) {
-        logger.warn("Attempt to set the same password as current: {}", ex.getMessage());
-        String genericErrorMessage = "The new password cannot be the same as your current password.";
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid Password", genericErrorMessage);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    //Método Auxiliar para construir a resposta de erro
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String errorTitle, String errorMessage) {
+        ErrorResponse errorResponse = new ErrorResponse(status.value(), errorTitle, errorMessage);
+        return new ResponseEntity<>(errorResponse, status);
     }
 }
