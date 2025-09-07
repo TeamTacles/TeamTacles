@@ -26,7 +26,7 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, Abstract
     }
 
     private UserAuthenticated extractUser(Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = Long.valueOf(jwt.getSubject()); //mudei aq
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
         return new UserAuthenticated(user);

@@ -10,6 +10,7 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -35,6 +36,9 @@ public class User {
     @Size(min = 5, max = 100)
     @NotBlank(message="The password cannot be blank")
     private String password;
+
+    private String resetPasswordToken;
+    private LocalDateTime resetPasswordTokenExpiry;
 
     @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;

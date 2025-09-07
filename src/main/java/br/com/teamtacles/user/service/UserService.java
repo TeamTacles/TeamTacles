@@ -14,7 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import br.com.teamtacles.user.validator.PasswordMatchValidator;
 
+
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Service
@@ -111,5 +114,29 @@ public class UserService {
 
     private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
         return passwordEncoder.matches(providedPassword, currentPasswordHash);
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword, String passwordConfirm) {
+        passwordMatchValidator.validate(newPassword, passwordConfirm);
+
+        User user = userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Validation token is invalid or has expired."));
+
+        if (user.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Validation token is invalid or has expired.");
+        }
+
+        if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
+            throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // mata o token
+        user.setResetPasswordToken(null);
+        user.setResetPasswordTokenExpiry(null);
+
+        userRepository.save(user);
     }
 }
