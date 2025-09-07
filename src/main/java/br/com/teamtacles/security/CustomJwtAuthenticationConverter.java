@@ -2,9 +2,8 @@ package br.com.teamtacles.security;
 
 import java.util.List;
 
-import br.com.teamtacles.model.User;
-import br.com.teamtacles.model.UserAuthenticated;
-import br.com.teamtacles.repository.UserRepository;
+import br.com.teamtacles.user.model.User;
+import br.com.teamtacles.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,5 +31,4 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, Abstract
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
         return new UserAuthenticated(user);
     }
-
 }
