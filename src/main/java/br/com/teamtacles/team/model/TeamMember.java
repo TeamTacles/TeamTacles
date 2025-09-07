@@ -5,12 +5,13 @@ import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"user", "team"}) 
+@ToString(exclude = {"user", "team"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="team_members")
@@ -38,6 +39,11 @@ public class TeamMember {
     @Column(name = "team_role", nullable = false)
     private ETeamRole teamRole;
 
+    @Column(name = "invitation_token")
+    private String invitationToken;
+
+    @Column(name = "invitation_token_expiry")
+    private LocalDateTime invitationTokenExpiry;
 
     @PrePersist
     public void OnInvite() {

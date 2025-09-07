@@ -1,5 +1,7 @@
 package br.com.teamtacles.team.service;
 
+import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleRequestDTO;
@@ -24,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 public class TeamService {
 
@@ -33,14 +38,17 @@ public class TeamService {
     private ModelMapper modelMapper;
     private TeamAuthorizationService teamAuthorizationService;
     private PagedResponseMapper pagedResponseMapper;
+    private EmailService emailService;
 
-    public TeamService(TeamRepository teamRepository, TeamMemberRepository teamMemberRepository, UserRepository userRepository, ModelMapper modelMapper, TeamAuthorizationService teamAuthorizationService, PagedResponseMapper pagedResponseMapper) {
+    public TeamService(TeamRepository teamRepository, TeamMemberRepository teamMemberRepository, UserRepository userRepository, ModelMapper modelMapper,
+                       TeamAuthorizationService teamAuthorizationService, PagedResponseMapper pagedResponseMapper, EmailService emailService) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
         this.teamAuthorizationService = teamAuthorizationService;
         this.pagedResponseMapper = pagedResponseMapper;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -56,6 +64,49 @@ public class TeamService {
 
         Team savedTeam = teamRepository.save(newTeam);
         return modelMapper.map(savedTeam, TeamResponseDTO.class);
+    }
+
+    @Transactional
+    public void inviteMember(Long teamId, InvitedMemberRequestDTO dto, User invitingUser) {
+        Team team = findTeamByIdOrThrow(teamId);
+
+        if(dto.getRole().equals(ETeamRole.OWNER)) {
+            throw new IllegalArgumentException("Cannot invite a user to be OWNER.");
+        }
+
+        teamAuthorizationService.checkTeamAdmin(invitingUser, team);
+
+        User userToInvite = userRepository.findByEmailIgnoreCase(dto.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email"));
+
+        if (teamMemberRepository.findByUserAndTeam(userToInvite, team).isPresent()) {
+            throw new ResourceAlreadyExistsException("User is already a member of this team.");
+        }
+
+        String token = UUID.randomUUID().toString();
+        TeamMember newMember = new TeamMember(userToInvite, team, dto.getRole());
+        newMember.setInvitationToken(token);
+        newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+
+        teamMemberRepository.save(newMember);
+
+        emailService.sendTeamInvitationEmail(userToInvite.getEmail(), team.getName(), token);
+    }
+
+    @Transactional
+    public void acceptInvitation(String token) {
+        TeamMember membership = teamMemberRepository.findByInvitationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation token."));
+
+        if(membership.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new ResourceNotFoundException("Invitation token has expired.");
+        }
+
+        membership.setAcceptedInvite(true);
+        membership.setInvitationToken(null);
+        membership.setInvitationTokenExpiry(null);
+
+        teamMemberRepository.save(membership);
     }
 
     @Transactional
@@ -110,7 +161,7 @@ public class TeamService {
     }
 
     public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User user) {
-        Page<TeamMember> teamsMemberPage = teamMemberRepository.findByUser(user, pageable);
+        Page<TeamMember> teamsMemberPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(user, pageable);
 
         Page<UserTeamResponseDTO> userTeamResponseDTOPage = teamsMemberPage.map(membership -> {
             UserTeamResponseDTO dto = new UserTeamResponseDTO();

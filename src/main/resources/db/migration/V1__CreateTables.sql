@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS teams (
     description VARCHAR(250),
     owner_id BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
-                             );
+);
 
 CREATE TABLE IF NOT EXISTS team_members (
     id BIGSERIAL PRIMARY KEY,
@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS team_members (
     team_id BIGINT NOT NULL,
     joined_at TIMESTAMP WITH TIME ZONE NOT NULL,
     accepted_invite BOOLEAN NOT NULL DEFAULT FALSE,
-    team_role VARCHAR(30) NOT NULL, -- Nova coluna para o papel
+    team_role VARCHAR(30) NOT NULL,
+    invitation_token VARCHAR(255),
+    invitation_token_expiry TIMESTAMP,
     UNIQUE (user_id, team_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE

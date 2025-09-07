@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 
 @RestController
 @RequestMapping("/api/team")
@@ -60,7 +61,7 @@ public class TeamController {
         return ResponseEntity.ok(updatedTeam);
     }
 
-    @PatchMapping("/{teamId}/members/{userId}/role")
+    @PatchMapping("/{teamId}/member/{userId}/role")
     public ResponseEntity<TeamMemberResponseDTO> updateMemberRole(
             @PathVariable Long teamId,
             @PathVariable Long userId,
@@ -76,5 +77,20 @@ public class TeamController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         teamService.deleteTeam(teamId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{teamId}/invite")
+    public ResponseEntity<Void> inviteMember(
+            @PathVariable Long teamId,
+            @RequestBody @Valid InvitedMemberRequestDTO dto,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        teamService.inviteMember(teamId, dto, authenticatedUser.getUser());
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
+        teamService.acceptInvitation(token);
+        return ResponseEntity.ok("Invitation accepted successfully.");
     }
 }

@@ -1,9 +1,7 @@
 package br.com.teamtacles.authentication.service;
 
-import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.user.model.User;
-import br.com.teamtacles.security.CustomJwtAuthenticationConverter;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -13,7 +11,6 @@ import br.com.teamtacles.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
-
 
 @Service
 public class AuthenticationService {
@@ -44,7 +41,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    private User createPasswordResetTokenForUser(User user) {
+    public User createPasswordResetTokenForUser(User user) {
         String token = UUID.randomUUID().toString();
         LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
 

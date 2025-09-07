@@ -18,7 +18,7 @@ public class EmailService {
         message.setTo(to);
         message.setSubject("TeamTacles -  Password Reset Request");
 
-      String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+      String resetUrl = "http://localhost:8080/reset-password?token=" + token;
 
                 message.setText("Hello,\n\nYou requested a password reset. " +
                         "Click the link below to create a new password:\n\n" + resetUrl +
@@ -26,5 +26,23 @@ public class EmailService {
                         "\n\nBest regards,\n TeamTacles");
 
         mailSender.send(message);
+    }
+
+    @Async
+    public void sendTeamInvitationEmail(String to, String teamName, String token) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("You have been invited to a TeamTacles team " + teamName);
+
+        String invitationUrl =   "http://localhost:8080/accept-invite?token=" + token;
+
+        message.setText("Hello,\n\nYou have been invited to join the team " + teamName + ". " +
+                "Click the link below to accept the invitation:\n\n" + invitationUrl +
+                "\n\nIf you were not expecting this invitation, please ignore this email." +
+                "\n\nSincerely,\nThe TeamTacles Team");
+
+        mailSender.send(message);
+
+
     }
 }

@@ -18,12 +18,14 @@ public class TeamAuthorizationService  {
     }
 
     public boolean isMember(User user, Team team) {
-        return teamMemberRepository.findByUserAndTeam(user, team).isPresent();
+        return teamMemberRepository.findByUserAndTeam(user, team)
+                .map(TeamMember::isAcceptedInvite)
+                .orElse(false);
     }
 
     public boolean isAdmin(User user, Team team) {
         return teamMemberRepository.findByUserAndTeam(user, team)
-                .map(member -> member.getTeamRole() == ETeamRole.ADMIN || member.getTeamRole() == ETeamRole.OWNER)
+                .map(member -> member.getTeamRole() == ETeamRole.ADMIN || member.getTeamRole() == ETeamRole.OWNER && member.isAcceptedInvite())
                 .orElse(false);
     }
 
@@ -50,7 +52,13 @@ public class TeamAuthorizationService  {
     }
 
     private TeamMember findMembershipOrThrow(User user, Team team) {
-        return teamMemberRepository.findByUserAndTeam(user, team)
-                .orElseThrow(() -> new AccessDeniedException("Access denied. User is not a member of this team."));
+        TeamMember membership = teamMemberRepository.findByUserAndTeam(user, team)
+                .orElseThrow(() -> new AccessDeniedException("Access denied. You are not a member of this team."));
+
+        if (!membership.isAcceptedInvite()) {
+            throw new AccessDeniedException("Access denied. You have a pending invitation for this team.");
+        }
+
+        return membership;
     }
 }
