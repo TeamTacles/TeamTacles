@@ -18,7 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/teams")
+@RequestMapping("/api/team")
 public class TeamController {
 
     private final TeamService teamService;
@@ -60,7 +60,7 @@ public class TeamController {
         return ResponseEntity.ok(updatedTeam);
     }
 
-    @PatchMapping("/{teamId}/members/{userId}")
+    @PatchMapping("/{teamId}/members/{userId}/role")
     public ResponseEntity<TeamMemberResponseDTO> updateMemberRole(
             @PathVariable Long teamId,
             @PathVariable Long userId,

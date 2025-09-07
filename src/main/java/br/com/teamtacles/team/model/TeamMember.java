@@ -3,13 +3,15 @@ package br.com.teamtacles.team.model;
 import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@ToString(exclude = {"user", "team"}) 
+@EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="team_members")
 public class TeamMember {

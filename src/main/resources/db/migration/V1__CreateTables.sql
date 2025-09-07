@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users(
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
-    email VARCHAR(250),
+    email VARCHAR(250) UNIQUE,
     password VARCHAR(100) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS user_roles (
 CREATE TABLE IF NOT EXISTS teams (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    description VARCHAR(250)
-);
+    description VARCHAR(250),
+    owner_id BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                             );
 
 CREATE TABLE IF NOT EXISTS team_members (
     id BIGSERIAL PRIMARY KEY,

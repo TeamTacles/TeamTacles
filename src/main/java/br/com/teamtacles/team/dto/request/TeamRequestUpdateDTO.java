@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 public class TeamRequestUpdateDTO {
 
-    @NotBlank(message = "The team name cannot be blank")
     @Size(min = 3, max = 50)
     private String name;
 

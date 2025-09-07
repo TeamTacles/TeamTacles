@@ -85,35 +85,9 @@ public class UserService {
         return modelMapper.map(updatedUser, UserResponseDTO.class);
     }
 
-    private void handlePasswordUpdate(UserRequestUpdateDTO userRequestDTO, User user) {
-        String newPassword = userRequestDTO.getPassword();
-        String passwordConfirm = userRequestDTO.getPasswordConfirm();
-
-        if ((newPassword != null && !newPassword.isBlank()) ||
-                (passwordConfirm != null && !passwordConfirm.isBlank()))  {
-
-            if (newPassword == null || newPassword.isBlank() ||
-                    passwordConfirm == null || passwordConfirm.isBlank()) {
-                throw new IllegalArgumentException("To change the password, you must provide both the new password and its confirmation.");
-            }
-
-            passwordMatchValidator.validate(newPassword, passwordConfirm);
-
-            if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
-                throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
-            }
-
-            user.setPassword(passwordEncoder.encode(newPassword));
-        }
-    }
-
     @Transactional
     public void deleteUser(User user){
         userRepository.delete(user);
-    }
-
-    private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
-        return passwordEncoder.matches(providedPassword, currentPasswordHash);
     }
 
     @Transactional
@@ -138,5 +112,31 @@ public class UserService {
         user.setResetPasswordTokenExpiry(null);
 
         userRepository.save(user);
+    }
+
+    private void handlePasswordUpdate(UserRequestUpdateDTO userRequestDTO, User user) {
+        String newPassword = userRequestDTO.getPassword();
+        String passwordConfirm = userRequestDTO.getPasswordConfirm();
+
+        if ((newPassword != null && !newPassword.isBlank()) ||
+                (passwordConfirm != null && !passwordConfirm.isBlank()))  {
+
+            if (newPassword == null || newPassword.isBlank() ||
+                    passwordConfirm == null || passwordConfirm.isBlank()) {
+                throw new IllegalArgumentException("To change the password, you must provide both the new password and its confirmation.");
+            }
+
+            passwordMatchValidator.validate(newPassword, passwordConfirm);
+
+            if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
+                throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
+            }
+
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
+    }
+
+    private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
+        return passwordEncoder.matches(providedPassword, currentPasswordHash);
     }
 }

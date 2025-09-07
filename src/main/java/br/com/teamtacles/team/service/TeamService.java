@@ -67,8 +67,13 @@ public class TeamService {
             validateProjectNameUniqueness(dto.getName(), team.getOwner());
         }
 
-        team.setName(dto.getName());
-        team.setDescription(dto.getDescription());
+        if(dto.getName() != null && !dto.getName().isEmpty()){
+            team.setName(dto.getName());
+        }
+
+        if(dto.getDescription() != null && !dto.getDescription().isEmpty()){
+            team.setDescription(dto.getDescription());
+        }
 
         Team updatedTeam = teamRepository.save(team);
         return modelMapper.map(updatedTeam, TeamResponseDTO.class);
@@ -105,8 +110,21 @@ public class TeamService {
     }
 
     public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User user) {
-        Page<TeamMember> teamsPage = teamMemberRepository.findByUser(user, pageable);
-        return pagedResponseMapper.toPagedResponse(teamsPage, UserTeamResponseDTO.class);
+        Page<TeamMember> teamsMemberPage = teamMemberRepository.findByUser(user, pageable);
+
+        Page<UserTeamResponseDTO> userTeamResponseDTOPage = teamsMemberPage.map(membership -> {
+            UserTeamResponseDTO dto = new UserTeamResponseDTO();
+            Team team = membership.getTeam();
+
+            dto.setId(team.getId());
+            dto.setName(team.getName());
+            dto.setDescription(team.getDescription());
+            dto.setTeamRole(membership.getTeamRole());
+
+            return dto;
+        });
+
+        return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
     }
 
     @Transactional

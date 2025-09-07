@@ -50,6 +50,4 @@ public class AuthenticationController {
         userService.resetPassword(request.getToken(), request.getNewPassword(), request.getPasswordConfirm());
         return ResponseEntity.ok("Password has been reset successfully.");
     }
-
-
 }

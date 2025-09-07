@@ -52,7 +52,4 @@ public class AuthenticationService {
         user.setResetPasswordTokenExpiry(expiryDate);
         return userRepository.save(user);
     }
-
-
-
 }

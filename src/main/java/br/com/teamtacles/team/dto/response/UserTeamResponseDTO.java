@@ -8,5 +8,5 @@ public class UserTeamResponseDTO {
     private Long id;
     private String name;
     private String description;
-    private ETeamRole role;
+    private ETeamRole teamRole;
 }

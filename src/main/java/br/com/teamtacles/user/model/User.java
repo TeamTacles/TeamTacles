@@ -12,9 +12,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"roles", "teamMemberships"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="users")
@@ -38,6 +40,7 @@ public class User {
     private String password;
 
     private String resetPasswordToken;
+
     private LocalDateTime resetPasswordTokenExpiry;
 
     @Setter(AccessLevel.NONE)
