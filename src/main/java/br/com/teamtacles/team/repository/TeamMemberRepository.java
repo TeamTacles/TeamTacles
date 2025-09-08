@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     Optional<TeamMember> findByUserAndTeam(User user, Team team);
     Page<TeamMember> findByUserAndAcceptedInviteTrue(User user, Pageable pageable);
+    Page<TeamMember> findByTeamAndAcceptedInviteTrue(Team team, Pageable pageable);
     Page<TeamMember> findByUser(User user, Pageable pageable);
     Optional<TeamMember> findByInvitationToken(String token);
 }

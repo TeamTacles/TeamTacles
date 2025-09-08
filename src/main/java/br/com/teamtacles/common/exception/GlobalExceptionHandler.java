@@ -109,8 +109,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         String genericErrorMessage = "You do not have permission to access this resource.";
+        String errorMessage = (ex.getMessage() != null && !ex.getMessage().isEmpty())
+                                    ? ex.getMessage()
+                                    : genericErrorMessage;
+
         log.error("Access denied for the request.", ex);
-        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Forbidden", genericErrorMessage);
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Forbidden", errorMessage);
     }
 
     @ExceptionHandler(Exception.class)

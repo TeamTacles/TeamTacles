@@ -36,6 +36,21 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTeam);
     }
 
+    @PostMapping("/{teamId}/invite")
+    public ResponseEntity<Void> inviteMember(
+            @PathVariable Long teamId,
+            @RequestBody @Valid InvitedMemberRequestDTO dto,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        teamService.inviteMember(teamId, dto, authenticatedUser.getUser());
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
+        teamService.acceptInvitation(token);
+        return ResponseEntity.ok("Invitation accepted successfully.");
+    }
+
     @GetMapping
     public ResponseEntity<PagedResponse<UserTeamResponseDTO>> getAllTeamsByUser(
             @AuthenticationPrincipal UserAuthenticated authenticatedUser,
@@ -50,6 +65,15 @@ public class TeamController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         TeamResponseDTO team = teamService.getTeamById(teamId, authenticatedUser.getUser());
         return ResponseEntity.ok(team);
+    }
+
+    @GetMapping("/{teamId}/members")
+    public ResponseEntity<PagedResponse<TeamMemberResponseDTO>> getAllMembersFromTeam(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser,
+            Pageable pageable) {
+        PagedResponse<TeamMemberResponseDTO> usersFromTeam = teamService.getAllMembersFromTeam(pageable, teamId, authenticatedUser.getUser());
+        return ResponseEntity.ok(usersFromTeam);
     }
 
     @PatchMapping("/{teamId}")
@@ -79,18 +103,13 @@ public class TeamController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{teamId}/invite")
-    public ResponseEntity<Void> inviteMember(
+    @DeleteMapping("/{teamId}/member/{userId}")
+    public ResponseEntity<Void> deleteMembershipFromTeam(
             @PathVariable Long teamId,
-            @RequestBody @Valid InvitedMemberRequestDTO dto,
+            @PathVariable Long userId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        teamService.inviteMember(teamId, dto, authenticatedUser.getUser());
-        return ResponseEntity.status(HttpStatus.OK).build();
+        teamService.deleteMembershipFromTeam(teamId, userId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/accept-invite")
-    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
-        teamService.acceptInvitation(token);
-        return ResponseEntity.ok("Invitation accepted successfully.");
-    }
 }

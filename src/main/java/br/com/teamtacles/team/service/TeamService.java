@@ -151,7 +151,9 @@ public class TeamService {
         }
 
         membershipToUpdate.setTeamRole(dto.getNewRole());
-        return modelMapper.map(teamMemberRepository.save(membershipToUpdate), TeamMemberResponseDTO.class);
+        TeamMember updatedMembership = teamMemberRepository.save(membershipToUpdate);
+
+        return toTeamMemberResponseDTO(updatedMembership);
     }
 
     public TeamResponseDTO getTeamById(Long teamId, User user) {
@@ -161,21 +163,24 @@ public class TeamService {
     }
 
     public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User user) {
-        Page<TeamMember> teamsMemberPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(user, pageable);
+        Page<TeamMember> userTeamsPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(user, pageable);
 
-        Page<UserTeamResponseDTO> userTeamResponseDTOPage = teamsMemberPage.map(membership -> {
-            UserTeamResponseDTO dto = new UserTeamResponseDTO();
-            Team team = membership.getTeam();
-
-            dto.setId(team.getId());
-            dto.setName(team.getName());
-            dto.setDescription(team.getDescription());
-            dto.setTeamRole(membership.getTeamRole());
-
-            return dto;
+        Page<UserTeamResponseDTO> userTeamResponseDTOPage = userTeamsPage.map(membership -> {
+            return toUserTeamResponseDTO(membership.getTeam(), membership);
         });
 
         return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
+    }
+
+    public PagedResponse<TeamMemberResponseDTO> getAllMembersFromTeam(Pageable pageable, Long teamId, User user) {
+        Team team = findTeamByIdOrThrow(teamId);
+        teamAuthorizationService.checkTeamMembership(user, team);
+
+        Page<TeamMember> teamsMemberPage = teamMemberRepository.findByTeamAndAcceptedInviteTrue(team, pageable);
+
+        Page<TeamMemberResponseDTO> teamMemberResponseDTOPage = teamsMemberPage.map(this::toTeamMemberResponseDTO);
+
+        return pagedResponseMapper.toPagedResponse(teamMemberResponseDTOPage, TeamMemberResponseDTO.class);
     }
 
     @Transactional
@@ -183,6 +188,29 @@ public class TeamService {
         Team team = findTeamByIdOrThrow(teamId);
         teamAuthorizationService.checkTeamOwner(user, team);
         teamRepository.delete(team);
+    }
+
+    @Transactional
+    public void deleteMembershipFromTeam(Long teamId, Long userIdToDelete, User user) {
+        Team team = findTeamByIdOrThrow(teamId);
+        teamAuthorizationService.checkTeamAdmin(user, team);
+
+        User userToDelete = findUserByIdOrThrow(userIdToDelete);
+        TeamMember membershipToDelete = findMembershipByIdOrThrow(userToDelete, team);
+        TeamMember actingMembership = findMembershipByIdOrThrow(user, team);
+
+        boolean actingUserIsOwner = actingMembership.getTeamRole().equals(ETeamRole.OWNER);
+        boolean targetIsPrivileged = membershipToDelete.getTeamRole().isPrivileged();
+
+        if (actingUserIsOwner && membershipToDelete.equals(actingMembership)) {
+            throw new AccessDeniedException("OWNER cannot remove themselves.");
+        }
+
+        if (!actingUserIsOwner && targetIsPrivileged) {
+            throw new AccessDeniedException("You cannot remove a member with role OWNER or ADMIN.");
+        }
+
+        teamMemberRepository.delete(membershipToDelete);
     }
 
     private void validateProjectNameUniqueness(String name, User creator){
@@ -204,5 +232,23 @@ public class TeamService {
     private TeamMember findMembershipByIdOrThrow(User userToUpdate, Team team) {
         return teamMemberRepository.findByUserAndTeam(userToUpdate, team)
                 .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this team."));
+    }
+
+    private TeamMemberResponseDTO toTeamMemberResponseDTO(TeamMember membership) {
+        TeamMemberResponseDTO dto = new TeamMemberResponseDTO();
+        dto.setUserId(membership.getUser().getId());
+        dto.setUsername(membership.getUser().getUsername());
+        dto.setEmail(membership.getUser().getEmail());
+        dto.setTeamRole(membership.getTeamRole());
+        return dto;
+    }
+
+    private UserTeamResponseDTO toUserTeamResponseDTO(Team team, TeamMember membership) {
+        UserTeamResponseDTO dto = new UserTeamResponseDTO();
+        dto.setId(team.getId());
+        dto.setName(team.getName());
+        dto.setDescription(team.getDescription());
+        dto.setTeamRole(membership.getTeamRole());
+        return dto;
     }
 }
