@@ -15,6 +15,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import br.com.teamtacles.user.validator.PasswordMatchValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.time.LocalDateTime;
@@ -22,6 +24,8 @@ import java.util.Set;
 
 @Service
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -39,17 +43,24 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO createUser(UserRequestRegisterDTO userRequestRegisterDTO) {
+        log.info("Attempting to create a new user with username: {}", userRequestRegisterDTO.getUsername());
         if(userRepository.existsByUsername(userRequestRegisterDTO.getUsername())){
+            log.warn("User creation failed: Username {} already exists", userRequestRegisterDTO.getUsername());
             throw new UsernameAlreadyExistsException("Username/email already exists");
         }
 
         if(userRepository.existsByEmail(userRequestRegisterDTO.getEmail())){
+            log.info("User creation failed: Email {} already exists", userRequestRegisterDTO.getEmail());
+
             throw new EmailAlreadyExistsException("Username/email already exists");
         }
 
         if(!userRequestRegisterDTO.getPassword().equals(userRequestRegisterDTO.getPasswordConfirm())){
+            log.warn("User creation failed for username {}: password and confirmation do not match.", userRequestRegisterDTO.getUsername());
             throw new PasswordMismatchException("Password and confirmation don't match");
         }
+        log.debug("User creation validations passed for username: {}. Proceeding to create user entity.", userRequestRegisterDTO.getUsername());
+
 
         User user = new User();
         user.setUsername(userRequestRegisterDTO.getUsername());
@@ -59,6 +70,9 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Error: Role USER not found."));
         user.setRoles(Set.of(userRole));
         User savedUser = userRepository.save(user);
+
+        log.info("User created successfully with ID: {}", savedUser.getId());
+
 
         UserResponseDTO userResponseDTO = modelMapper.map(savedUser, UserResponseDTO.class);
 
