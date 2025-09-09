@@ -50,4 +50,9 @@ public class AuthenticationController {
         userService.resetPassword(request.getToken(), request.getNewPassword(), request.getPasswordConfirm());
         return ResponseEntity.ok("Password has been reset successfully.");
     }
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestBody @Valid ForgotPasswordRequestDTO request) {
+        userService.resendVerificationEmail(request.getEmail());
+        return ResponseEntity.ok("If the email is registered, a verification email has been sent.");
+    }
 }

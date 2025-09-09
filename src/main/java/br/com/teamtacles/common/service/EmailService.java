@@ -89,4 +89,35 @@ public class EmailService {
 
 
     }
+
+    @Async
+    public void sendVerificationEmail(String to, String token) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setTo(to);
+            helper.setSubject("🐙 TeamTacles - Confirm your account");
+
+            String verificationUrl = baseUrl + "/api/user/verify-account?token=" + token;
+            String htmlContent = "<html><body>" +
+                    "Hello,<br><br>Thank you for registering! Please click the link below to activate your account:<br><br>" +
+                    "<a href='" + verificationUrl + "'>" + verificationUrl + "</a>" +
+                    "<br><br>Best regards,<br>The TeamTacles Team 🐙" +
+                    "<br><br><hr><br>" +
+                    "<img src='cid:welcomeLogo' style='width:500px; height:auto; display:block; margin:0 auto;'>" +
+                    "</body></html>";
+
+
+            helper.setText(htmlContent, true);
+            ClassPathResource logo = new ClassPathResource("static/images/Welcome_message.png");
+            helper.addInline("welcomeLogo", logo);
+
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Falha ao enviar e-mail de verificação", e);
+        }
+    }
+
 }

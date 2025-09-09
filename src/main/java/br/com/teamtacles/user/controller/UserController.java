@@ -23,9 +23,16 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> registerUser(@RequestBody @Valid UserRequestRegisterDTO userRequestRegisterDTO) {
-        UserResponseDTO userCreated = userService.createUser(userRequestRegisterDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(userCreated);
+    public ResponseEntity<String> registerUser(@RequestBody @Valid UserRequestRegisterDTO userRequestRegisterDTO) {
+        userService.createUser(userRequestRegisterDTO);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("User registered successfully. Please check your email to verify your account.");
+    }
+
+    @GetMapping("/verify-account")
+    public ResponseEntity<String> verifyAccount(@RequestParam("token") String token) {
+        userService.verifyUser(token);
+        return ResponseEntity.ok("Your account has been successfully verified.");
     }
 
     @GetMapping

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
+import org.springframework.security.authentication.DisabledException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -122,6 +122,13 @@ public class GlobalExceptionHandler {
         String genericErrorMessage = "An unexpected error occurred. Please try again later.";
         log.error("Internal Server Error: ", ex);
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", genericErrorMessage);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException ex) {
+        String friendlyErrorMessage = "Your account is not verified. Please check your email for the verification link.";
+        log.error("Login attempt with disabled account: {}", ex.getMessage(), ex);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Account Not Verified", friendlyErrorMessage);
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String errorTitle, String errorMessage) {

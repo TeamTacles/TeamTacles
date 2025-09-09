@@ -3,9 +3,7 @@ CREATE TABLE IF NOT EXISTS users(
     username VARCHAR(50) NOT NULL,
     email VARCHAR(250) UNIQUE,
     password VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    reset_password_token VARCHAR(255),
-    reset_password_token_expiry TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS role(

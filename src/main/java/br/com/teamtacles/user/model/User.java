@@ -52,6 +52,10 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> teamMemberships = new HashSet<>();
 
+    private String verificationToken;
+    private LocalDateTime verificationTokenExpiry;
+    private boolean enabled = false;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();

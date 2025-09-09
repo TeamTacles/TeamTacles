@@ -1,6 +1,7 @@
 package br.com.teamtacles.user.service;
 
 import br.com.teamtacles.common.exception.*;
+import br.com.teamtacles.common.service.EmailService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
 import br.com.teamtacles.user.dto.response.UserResponseDTO;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -32,13 +34,15 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
     private final PasswordMatchValidator passwordMatchValidator;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder, ModelMapper modelMapper, RoleRepository roleRepository, PasswordMatchValidator passwordMatchValidator){
+    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder, ModelMapper modelMapper, RoleRepository roleRepository, PasswordMatchValidator passwordMatchValidator, EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.passwordMatchValidator = passwordMatchValidator;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -69,8 +73,13 @@ public class UserService {
         Role userRole = roleRepository.findByRoleName(ERole.USER)
                 .orElseThrow(() -> new ResourceNotFoundException("Error: Role USER not found."));
         user.setRoles(Set.of(userRole));
-        User savedUser = userRepository.save(user);
+        String token = UUID.randomUUID().toString();
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(1));
+        user.setEnabled(false);
 
+        User savedUser = userRepository.save(user);
+        emailService.sendVerificationEmail(savedUser.getEmail(), token);
         log.info("User created successfully with ID: {}", savedUser.getId());
 
 
@@ -153,4 +162,32 @@ public class UserService {
     private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
         return passwordEncoder.matches(providedPassword, currentPasswordHash);
     }
+
+    @Transactional
+    public void verifyUser(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Verification token is invalid or has expired."));
+        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("The verification token has expired.");
+        }
+        user.setEnabled(true);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            if (!user.isEnabled()) {
+                String token = UUID.randomUUID().toString();
+                user.setVerificationToken(token);
+                user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+                userRepository.save(user);
+                emailService.sendVerificationEmail(user.getEmail(), token);
+            }
+        });
+    }
+
+
 }
