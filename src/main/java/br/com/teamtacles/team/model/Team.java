@@ -14,7 +14,6 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @ToString(exclude = {"owner", "members"})
 @EqualsAndHashCode(of = "id")
 @Entity
@@ -41,6 +40,10 @@ public class Team {
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> members = new HashSet<>();
+
+    private String invitationToken;
+
+    private LocalDateTime invitationTokenExpiry;
 
     @PrePersist
     public void onCreate() {

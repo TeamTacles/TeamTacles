@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS users(
     username VARCHAR(50) NOT NULL,
     email VARCHAR(250) UNIQUE,
     password VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    reset_password_token VARCHAR(255),
+    reset_password_token_expiry TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS role(
@@ -24,7 +26,9 @@ CREATE TABLE IF NOT EXISTS teams (
     name VARCHAR(50) NOT NULL,
     description VARCHAR(250),
     owner_id BIGINT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    invitation_token VARCHAR(255) UNIQUE,
+    invitation_token_expiry TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS team_members (

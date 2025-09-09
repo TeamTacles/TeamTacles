@@ -6,6 +6,7 @@ import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleRequestDTO;
 import br.com.teamtacles.common.dto.page.PagedResponse;
+import br.com.teamtacles.team.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamResponseDTO;
 import br.com.teamtacles.team.dto.response.UserTeamResponseDTO;
@@ -19,6 +20,7 @@ import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.team.repository.TeamMemberRepository;
 import br.com.teamtacles.team.repository.TeamRepository;
 import br.com.teamtacles.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,9 @@ import java.util.UUID;
 
 @Service
 public class TeamService {
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     private TeamRepository teamRepository;
     private TeamMemberRepository teamMemberRepository;
@@ -52,13 +57,13 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamResponseDTO createTeam(TeamRequestRegisterDTO dto, User creator) {
-        validateProjectNameUniqueness(dto.getName(), creator);
+    public TeamResponseDTO createTeam(TeamRequestRegisterDTO dto, User actingUser) {
+        validateProjectNameUniqueness(dto.getName(), actingUser);
 
         Team newTeam = modelMapper.map(dto, Team.class);
-        newTeam.setOwner(creator);
+        newTeam.setOwner(actingUser);
 
-        TeamMember creatorMembership = new TeamMember(creator, newTeam, ETeamRole.OWNER);
+        TeamMember creatorMembership = new TeamMember(actingUser, newTeam, ETeamRole.OWNER);
         creatorMembership.setAcceptedInvite(true);
         newTeam.getMembers().add(creatorMembership);
 
@@ -67,17 +72,16 @@ public class TeamService {
     }
 
     @Transactional
-    public void inviteMember(Long teamId, InvitedMemberRequestDTO dto, User invitingUser) {
+    public void inviteMember(Long teamId, InvitedMemberRequestDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
 
         if(dto.getRole().equals(ETeamRole.OWNER)) {
             throw new IllegalArgumentException("Cannot invite a user to be OWNER.");
         }
 
-        teamAuthorizationService.checkTeamAdmin(invitingUser, team);
+        teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
-        User userToInvite = userRepository.findByEmailIgnoreCase(dto.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email"));
+        User userToInvite = findByEmailIgnoreCaseOrThrow(dto.getEmail());
 
         if (teamMemberRepository.findByUserAndTeam(userToInvite, team).isPresent()) {
             throw new ResourceAlreadyExistsException("User is already a member of this team.");
@@ -95,8 +99,11 @@ public class TeamService {
 
     @Transactional
     public void acceptInvitation(String token) {
-        TeamMember membership = teamMemberRepository.findByInvitationToken(token)
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation token."));
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Invitation token cannot be null or empty.");
+        }
+
+        TeamMember membership = findByInvitationTokenORThrow(token);
 
         if(membership.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new ResourceNotFoundException("Invitation token has expired.");
@@ -110,9 +117,9 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamResponseDTO updateTeam(Long teamId, TeamRequestUpdateDTO dto, User user) {
+    public TeamResponseDTO updateTeam(Long teamId, TeamRequestUpdateDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
-        teamAuthorizationService.checkTeamOwner(user, team);
+        teamAuthorizationService.checkTeamOwner(actingUser, team);
 
         if(!team.getName().equalsIgnoreCase(dto.getName())){
             validateProjectNameUniqueness(dto.getName(), team.getOwner());
@@ -156,14 +163,14 @@ public class TeamService {
         return toTeamMemberResponseDTO(updatedMembership);
     }
 
-    public TeamResponseDTO getTeamById(Long teamId, User user) {
+    public TeamResponseDTO getTeamById(Long teamId, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
-        teamAuthorizationService.checkTeamMembership(user, team);
+        teamAuthorizationService.checkTeamMembership(actingUser, team);
         return modelMapper.map(team, TeamResponseDTO.class);
     }
 
-    public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User user) {
-        Page<TeamMember> userTeamsPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(user, pageable);
+    public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User actingUser) {
+        Page<TeamMember> userTeamsPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(actingUser, pageable);
 
         Page<UserTeamResponseDTO> userTeamResponseDTOPage = userTeamsPage.map(membership -> {
             return toUserTeamResponseDTO(membership.getTeam(), membership);
@@ -172,9 +179,9 @@ public class TeamService {
         return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
     }
 
-    public PagedResponse<TeamMemberResponseDTO> getAllMembersFromTeam(Pageable pageable, Long teamId, User user) {
+    public PagedResponse<TeamMemberResponseDTO> getAllMembersFromTeam(Pageable pageable, Long teamId, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
-        teamAuthorizationService.checkTeamMembership(user, team);
+        teamAuthorizationService.checkTeamMembership(actingUser, team);
 
         Page<TeamMember> teamsMemberPage = teamMemberRepository.findByTeamAndAcceptedInviteTrue(team, pageable);
 
@@ -184,20 +191,20 @@ public class TeamService {
     }
 
     @Transactional
-    public void deleteTeam(Long teamId, User user) {
+    public void deleteTeam(Long teamId, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
-        teamAuthorizationService.checkTeamOwner(user, team);
+        teamAuthorizationService.checkTeamOwner(actingUser, team);
         teamRepository.delete(team);
     }
 
     @Transactional
-    public void deleteMembershipFromTeam(Long teamId, Long userIdToDelete, User user) {
+    public void deleteMembershipFromTeam(Long teamId, Long userIdToDelete, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
-        teamAuthorizationService.checkTeamAdmin(user, team);
+        teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
         User userToDelete = findUserByIdOrThrow(userIdToDelete);
         TeamMember membershipToDelete = findMembershipByIdOrThrow(userToDelete, team);
-        TeamMember actingMembership = findMembershipByIdOrThrow(user, team);
+        TeamMember actingMembership = findMembershipByIdOrThrow(actingUser, team);
 
         boolean actingUserIsOwner = actingMembership.getTeamRole().equals(ETeamRole.OWNER);
         boolean targetIsPrivileged = membershipToDelete.getTeamRole().isPrivileged();
@@ -213,6 +220,42 @@ public class TeamService {
         teamMemberRepository.delete(membershipToDelete);
     }
 
+    @Transactional
+    public InviteLinkResponseDTO generateTeamInviteToken(Long teamID, User actingUser) {
+        Team team = findTeamByIdOrThrow(teamID);
+        teamAuthorizationService.checkTeamAdmin(actingUser, team);
+
+        String token = UUID.randomUUID().toString();
+        team.setInvitationToken(token);
+        team.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+
+        teamRepository.save(team);
+
+        return new InviteLinkResponseDTO(baseUrl + "/api/team/join?token=" + token, team.getInvitationTokenExpiry());
+    }
+
+    @Transactional
+    public TeamMemberResponseDTO acceptTeamInvitationLink(String token, User actingUser) {
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Invitation token cannot be null or empty.");
+        }
+
+        Team team = findByInvitationTokenOrThrow(token);
+
+        if(team.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new ResourceNotFoundException("Invitation token has expired.");
+        }
+
+        if(teamMemberRepository.findByUserAndTeam(actingUser, team).isPresent()) {
+            throw new ResourceAlreadyExistsException("User is already a member of this team.");
+        }
+
+        TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
+        newMember.setAcceptedInvite(true);
+
+        return toTeamMemberResponseDTO(teamMemberRepository.save(newMember));
+    }
+
     private void validateProjectNameUniqueness(String name, User creator){
         teamRepository.findByNameIgnoreCaseAndOwner(name, creator).ifPresent(t -> {
             throw new ResourceAlreadyExistsException("Team name already in use by this creator.");
@@ -224,14 +267,29 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
     }
 
+    private Team findByInvitationTokenOrThrow(String token) {
+        return teamRepository.findByInvitationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation."));
+    }
+
     private User findUserByIdOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     }
 
+    private User findByEmailIgnoreCaseOrThrow(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email"));
+    }
+
     private TeamMember findMembershipByIdOrThrow(User userToUpdate, Team team) {
         return teamMemberRepository.findByUserAndTeam(userToUpdate, team)
                 .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this team."));
+    }
+
+    private TeamMember findByInvitationTokenORThrow(String token) {
+        return teamMemberRepository.findByInvitationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation."));
     }
 
     private TeamMemberResponseDTO toTeamMemberResponseDTO(TeamMember membership) {

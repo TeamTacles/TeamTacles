@@ -3,6 +3,7 @@ package br.com.teamtacles.common.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Autowired
     private JavaMailSender mailSender;
@@ -27,7 +31,7 @@ public class EmailService {
             helper.setSubject("🐙 TeamTacles - Password Reset Request");
 
 
-            String resetUrl = "http://localhost:8080/reset-password?token=" + token;
+            String resetUrl = baseUrl + "/reset-password?token=" + token;
 
             String htmlContent = "<html><body>" +
                     "Hello,<br><br>You requested a password reset. " +
@@ -61,7 +65,7 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject("🐙 TeamTacles - Team Invitation");
 
-            String invitationUrl = "http://localhost:8080/accept-invite?token=" + token;
+            String invitationUrl = baseUrl + "/accept-invite?token=" + token;
 
             String htmlContent = "<html><body>" +
                     "Hello,<br><br>You have been invited to join the team <strong>" + teamName + "</strong>. " +

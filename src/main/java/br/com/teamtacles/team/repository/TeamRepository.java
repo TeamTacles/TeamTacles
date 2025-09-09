@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
     Optional<Team> findByNameIgnoreCaseAndOwner(String name, User owner);
+    Optional<Team> findByInvitationToken(String token);
 }

@@ -5,6 +5,7 @@ import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleRequestDTO;
 import br.com.teamtacles.common.dto.page.PagedResponse;
+import br.com.teamtacles.team.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamResponseDTO;
 import br.com.teamtacles.team.dto.response.UserTeamResponseDTO;
@@ -49,6 +50,22 @@ public class TeamController {
     public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
         teamService.acceptInvitation(token);
         return ResponseEntity.ok("Invitation accepted successfully.");
+    }
+
+    @PostMapping("/{teamId}/invite-link")
+    public ResponseEntity<InviteLinkResponseDTO> generateInvitedLink(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        InviteLinkResponseDTO inviteLinkDTO = teamService.generateTeamInviteToken(teamId, authenticatedUser.getUser());
+        return ResponseEntity.ok(inviteLinkDTO);
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<TeamMemberResponseDTO> joinTeamWithLink(
+            @RequestParam String token,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        TeamMemberResponseDTO teamMemberDTO = teamService.acceptTeamInvitationLink(token, authenticatedUser.getUser());
+        return ResponseEntity.ok(teamMemberDTO);
     }
 
     @GetMapping

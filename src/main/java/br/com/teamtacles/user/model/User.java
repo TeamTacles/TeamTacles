@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @ToString(exclude = {"roles", "teamMemberships"})
 @EqualsAndHashCode(of = "id")
 @Entity
