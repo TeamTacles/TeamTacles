@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Confirm Your Account</title>
+</head>
+<body style="background-color: #f0f4f8; font-family: Arial, sans-serif; margin: 0; padding: 0;">
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+        <td align="center">
+            <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <tr>
+                    <td align="center">
+                        <img th:src="|cid:welcomeLogo|" alt="Welcome to TeamTacles" style="width: 100%; height: auto; border-top-left-radius: 8px; border-top-right-radius: 8px;"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding: 40px 30px;">
+                        <h1 style="color: #102122; font-size: 24px;">Welcome to TeamTacles!</h1>
+                        <p style="color: #555555; font-size: 16px; line-height: 1.5;">Thank you for registering! Please click the button below to activate your account and start organizing your projects.</p>
+                        <a th:href="${verificationUrl}" style="background-color: #db8c4c; color: #ffffff; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 20px;">Verify Account</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding: 20px 30px; background-color: #282c34; color: #ffffff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                        <p style="margin: 0;">Best regards,<br/>The TeamTacles Team 🐙</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

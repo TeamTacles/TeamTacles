@@ -10,6 +10,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 public class EmailService {
@@ -20,103 +22,73 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private TemplateEngine templateEngine;
+
     @Async
     public void sendPasswordResetEmail(String to, String token) {
-
         try {
+            Context context = new Context();
+            context.setVariable("resetUrl", baseUrl + "/reset-password?token=" + token);
+
+            String htmlContent = templateEngine.process("password-reset-email", context);
+
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
             helper.setSubject("🐙 TeamTacles - Password Reset Request");
-
-
-            String resetUrl = baseUrl + "/reset-password?token=" + token;
-
-            String htmlContent = "<html><body>" +
-                    "Hello,<br><br>You requested a password reset. " +
-                    "Click the link below to create a new password:<br><br>" +
-                    "<a href='" + resetUrl + "'>" + resetUrl + "</a>" +
-                    "<br><br>If you did not request this change, please ignore this email." +
-                    "<br><br>Best regards,<br>TeamTacles 🐙" +
-                    "<br><br><hr><br>" +
-                    "<img src='cid:logo' style='width:500px; height:auto; display:block; margin:0 auto;'>" +
-                    "</body></html>";
-
             helper.setText(htmlContent, true);
+            helper.addInline("logo", new ClassPathResource("static/images/Reset_Password.png"));
 
-            ClassPathResource logo = new ClassPathResource("static/images/Reset_Password.png");
-            helper.addInline("logo", logo);
             mailSender.send(message);
-
         } catch (MessagingException e) {
             throw new RuntimeException("Failed to send email", e);
         }
-
     }
 
     @Async
     public void sendTeamInvitationEmail(String to, String teamName, String token) {
-
         try {
+            Context context = new Context();
+            context.setVariable("teamName", teamName);
+            context.setVariable("invitationUrl", baseUrl + "/accept-invite?token=" + token);
+
+            String htmlContent = templateEngine.process("team-invitation-email", context);
+
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
             helper.setSubject("🐙 TeamTacles - Team Invitation");
-
-            String invitationUrl = baseUrl + "/accept-invite?token=" + token;
-
-            String htmlContent = "<html><body>" +
-                    "Hello,<br><br>You have been invited to join the team <strong>" + teamName + "</strong>. " +
-                    "Click the link below to accept the invitation:<br><br>" +
-                    "<a href='" + invitationUrl + "'>" + invitationUrl + "</a>" +
-                    "<br><br>If you were not expecting this invitation, please ignore this email." +
-                    "<br><br>Sincerely,<br>The TeamTacles Team 🐙" +
-                    "<br><br><hr><br>" +
-                    "<img src='cid:teamLogo' style='width:500px; height:auto; display:block; margin:0 auto;'>" +
-                    "</body></html>";
-
             helper.setText(htmlContent, true);
-            ClassPathResource logo = new ClassPathResource("static/images/Invite_team.png");
-            helper.addInline("teamLogo", logo);
+            helper.addInline("teamLogo", new ClassPathResource("static/images/Invite_team.png"));
+
             mailSender.send(message);
-
-
         } catch (MessagingException e) {
             throw new RuntimeException("Failed to send invitation email", e);
         }
-
-
     }
 
     @Async
     public void sendVerificationEmail(String to, String token) {
         try {
+            Context context = new Context();
+            context.setVariable("verificationUrl", baseUrl + "/api/user/verify-account?token=" + token);
+
+            String htmlContent = templateEngine.process("verification-email", context);
+
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
             helper.setSubject("🐙 TeamTacles - Confirm your account");
-
-            String verificationUrl = baseUrl + "/api/user/verify-account?token=" + token;
-            String htmlContent = "<html><body>" +
-                    "Hello,<br><br>Thank you for registering! Please click the link below to activate your account:<br><br>" +
-                    "<a href='" + verificationUrl + "'>" + verificationUrl + "</a>" +
-                    "<br><br>Best regards,<br>The TeamTacles Team 🐙" +
-                    "<br><br><hr><br>" +
-                    "<img src='cid:welcomeLogo' style='width:500px; height:auto; display:block; margin:0 auto;'>" +
-                    "</body></html>";
-
-
             helper.setText(htmlContent, true);
-            ClassPathResource logo = new ClassPathResource("static/images/Welcome_message.png");
-            helper.addInline("welcomeLogo", logo);
-
+            helper.addInline("welcomeLogo", new ClassPathResource("static/images/Welcome_message.png"));
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Falha ao enviar e-mail de verificação", e);
+            throw new RuntimeException("Failed to send verification email", e);
         }
     }
 
