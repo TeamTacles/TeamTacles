@@ -42,3 +42,26 @@ CREATE TABLE IF NOT EXISTS team_members (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS project (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(50) NOT NULL,
+    description VARCHAR(250),
+    owner_id BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_project_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS project_members (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    joined_at TIMESTAMP WITH TIME ZONE,
+    accepted_invite BOOLEAN NOT NULL DEFAULT false,
+    project_role VARCHAR(50) NOT NULL,
+    invitation_token VARCHAR(255) UNIQUE,
+    invitation_token_expiry TIMESTAMP,
+    CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES project(id),
+    CONSTRAINT fk_pm_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT uq_project_user UNIQUE (project_id, user_id)
+);

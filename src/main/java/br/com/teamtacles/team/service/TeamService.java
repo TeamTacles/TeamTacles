@@ -58,7 +58,7 @@ public class TeamService {
 
     @Transactional
     public TeamResponseDTO createTeam(TeamRequestRegisterDTO dto, User actingUser) {
-        validateProjectNameUniqueness(dto.getName(), actingUser);
+        validateTeamNameUniqueness(dto.getName(), actingUser);
 
         Team newTeam = modelMapper.map(dto, Team.class);
         newTeam.setOwner(actingUser);
@@ -122,7 +122,7 @@ public class TeamService {
         teamAuthorizationService.checkTeamOwner(actingUser, team);
 
         if(!team.getName().equalsIgnoreCase(dto.getName())){
-            validateProjectNameUniqueness(dto.getName(), team.getOwner());
+            validateTeamNameUniqueness(dto.getName(), team.getOwner());
         }
 
         if(dto.getName() != null && !dto.getName().isEmpty()){
@@ -256,10 +256,10 @@ public class TeamService {
         return toTeamMemberResponseDTO(teamMemberRepository.save(newMember));
     }
 
-    private void validateProjectNameUniqueness(String name, User creator){
-        teamRepository.findByNameIgnoreCaseAndOwner(name, creator).ifPresent(t -> {
+    private void validateTeamNameUniqueness(String name, User owner){
+        if(teamRepository.existsByNameIgnoreCaseAndOwner(name, owner)) {
             throw new ResourceAlreadyExistsException("Team name already in use by this creator.");
-        });
+        }
     }
 
     private Team findTeamByIdOrThrow(Long teamId) {

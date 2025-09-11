@@ -1,5 +1,6 @@
 package br.com.teamtacles.user.model;
 
+import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.team.model.TeamMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -51,6 +52,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> teamMemberships = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProjectMember> projectMemberships = new HashSet<>();
 
     private String verificationToken;
     private LocalDateTime verificationTokenExpiry;
