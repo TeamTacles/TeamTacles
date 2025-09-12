@@ -2,6 +2,7 @@ package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.page.PagedResponse;
 import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
+import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
@@ -41,4 +42,15 @@ public class ProjectController {
         PagedResponse<ProjectResponseDTO> projects = projectService.getAllProjectsByUser(pageable, authenticatedUser.getUser());
         return ResponseEntity.ok(projects);
     }
+
+    @PatchMapping("/{projectId}")
+    public ResponseEntity<ProjectResponseDTO> updateProject(
+            @PathVariable Long projectId,
+            @RequestBody @Valid ProjectRequestUpdateDTO requestDTO, @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        ProjectResponseDTO updatedProject = projectService.updateProject(projectId, requestDTO, authenticatedUser.getUser());
+        return ResponseEntity.ok(updatedProject);
+    }
+
+
+
 }
