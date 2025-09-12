@@ -96,6 +96,15 @@ public class ProjectService {
         Project updatedProject = projectRepository.save(project);
         return modelMapper.map(updatedProject, ProjectResponseDTO.class);
     }
+
+    @Transactional
+    public void deleteProject(Long projectId, User actingUser) {
+        Project project = findProjectByIdOrThrow(projectId);
+        projectAuthorizationService.checkProjectOwner(actingUser, project); // Only owner can delete the project
+        projectRepository.delete(project);
+    }
+
+
     //Auxiliar
     private Project findProjectByIdOrThrow(Long projectId) {
         return projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
