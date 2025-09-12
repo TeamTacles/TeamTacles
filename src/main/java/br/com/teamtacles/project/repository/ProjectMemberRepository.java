@@ -16,4 +16,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     Optional<ProjectMember> findByUserAndProject(User user, Project project);
 
     Page<ProjectMember> findByUserAndAcceptedInviteTrue(User user, Pageable pageable);
+
+    Optional<ProjectMember> findByInvitationToken(String token);
+
 }

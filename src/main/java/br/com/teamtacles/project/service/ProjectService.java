@@ -1,8 +1,11 @@
 package br.com.teamtacles.project.service;
 
+import br.com.teamtacles.common.dto.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceAlreadyExistsException;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
+import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
 import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
 import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
@@ -12,12 +15,15 @@ import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.user.model.User;
+import br.com.teamtacles.user.repository.UserRepository; // Import necessário
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import br.com.teamtacles.common.dto.page.PagedResponse;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 
@@ -29,13 +35,18 @@ public class ProjectService {
     private final ModelMapper modelMapper;
     private final ProjectAuthorizationService projectAuthorizationService;
     private final PagedResponseMapper pagedResponseMapper;
+    private final UserRepository userRepository;
+    private  final EmailService emailService;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository, ModelMapper modelMapper, ProjectAuthorizationService projectAuthorizationService, PagedResponseMapper pagedResponseMapper) {
+    public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository, ModelMapper modelMapper, ProjectAuthorizationService projectAuthorizationService, PagedResponseMapper pagedResponseMapper, UserRepository userRepository, EmailService emailService) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.modelMapper = modelMapper;
         this.projectAuthorizationService = projectAuthorizationService;
         this.pagedResponseMapper = pagedResponseMapper;
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+
     }
 
     @Transactional
@@ -104,10 +115,69 @@ public class ProjectService {
         projectRepository.delete(project);
     }
 
+    @Transactional
+    public void inviteMember(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
+        Project project = findProjectByIdOrThrow(projectId);
 
-    //Auxiliar
+        projectAuthorizationService.checkProjectAdmin(actingUser, project);
+
+        if (requestDTO.getRole().equals(EProjectRole.OWNER)) {
+            throw new IllegalArgumentException("Cannot invite a user to be an OWNER.");
+        }
+
+        User userToInvite = userRepository.findByEmailIgnoreCase(requestDTO.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User to invite not found with email: " + requestDTO.getEmail()));
+
+        if (projectMemberRepository.findByUserAndProject(userToInvite, project).isPresent()) {
+            throw new ResourceAlreadyExistsException("User is already a member of this project.");
+        }
+
+        ProjectMember newMember = new ProjectMember(userToInvite, project, requestDTO.getRole());
+        newMember.setInvitationToken(UUID.randomUUID().toString());
+        newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+        newMember.setAcceptedInvite(false);
+
+        projectMemberRepository.save(newMember);
+
+        emailService.sendProjectInvitationEmail(
+                userToInvite.getEmail(),
+                project.getTitle(),
+                newMember.getInvitationToken()
+
+        );
+
+    }
+
+
+
+    //Métodos Auxiliares
     private Project findProjectByIdOrThrow(Long projectId) {
         return projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
     }
+
+    @Transactional
+    public void acceptInvitation(String token) {
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Invitation token cannot be null or empty.");
+        }
+
+        ProjectMember membership = findByInvitationTokenOrThrow(token);
+
+        if (membership.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new ResourceNotFoundException("Invitation token has expired.");
+        }
+
+        membership.setAcceptedInvite(true);
+        membership.setInvitationToken(null);
+        membership.setInvitationTokenExpiry(null);
+
+        projectMemberRepository.save(membership);
+    }
+
+    private ProjectMember findByInvitationTokenOrThrow(String token) {
+        return projectMemberRepository.findByInvitationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation token."));
+    }
 }
+
 

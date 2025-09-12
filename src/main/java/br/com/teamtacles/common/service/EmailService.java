@@ -52,7 +52,7 @@ public class EmailService {
         try {
             Context context = new Context();
             context.setVariable("teamName", teamName);
-            context.setVariable("invitationUrl", baseUrl + "/accept-invite?token=" + token);
+            context.setVariable("invitationUrl", baseUrl + "/api/team/accept-invite?token=" + token);
 
             String htmlContent = templateEngine.process("team-invitation-email", context);
 
@@ -67,6 +67,31 @@ public class EmailService {
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new RuntimeException("Failed to send invitation email", e);
+        }
+    }
+
+
+    @Async
+    public void sendProjectInvitationEmail(String to, String projectName, String token) {
+        try {
+            Context context = new Context();
+            context.setVariable("projectName", projectName);
+            context.setVariable("invitationUrl", baseUrl + "/api/project/accept-invite?token=" + token);
+
+            String htmlContent = templateEngine.process("project-invitation-email", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(to);
+            helper.setSubject("🐙 TeamTacles - Project Invitation");
+            helper.setText(htmlContent, true);
+
+            helper.addInline("projectLogo", new ClassPathResource("static/images/Invite_Project.png"));
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send project invitation email", e);
         }
     }
 

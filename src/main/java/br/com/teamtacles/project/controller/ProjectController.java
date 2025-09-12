@@ -1,12 +1,14 @@
 package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.page.PagedResponse;
+import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
 import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
 import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -58,6 +60,24 @@ public class ProjectController {
         projectService.deleteProject(projectId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{projectId}/invite")
+    public ResponseEntity<Void> inviteMember(
+            @PathVariable Long projectId,
+            @RequestBody @Valid InviteProjectMemberRequestDTO requestDTO,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        projectService.inviteMember(projectId, requestDTO, authenticatedUser.getUser());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/accept-invite") // para o browser GET permite clique no link
+
+    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
+        projectService.acceptInvitation(token);
+        return ResponseEntity.ok("Invitation accepted successfully.");
+
+    }
+
 
 
 
