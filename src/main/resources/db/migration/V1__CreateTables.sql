@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS project (
     description VARCHAR(250),
     owner_id BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE,
+    invitation_token VARCHAR(255) UNIQUE,
+    invitation_token_expiry TIMESTAMP,
     CONSTRAINT fk_project_owner FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 

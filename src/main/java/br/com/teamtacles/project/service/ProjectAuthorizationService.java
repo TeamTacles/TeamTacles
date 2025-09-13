@@ -18,7 +18,6 @@ public class ProjectAuthorizationService {
         this.projectMemberRepository = projectMemberRepository;
     }
 
-
     public boolean isMember(User user, Project project) {
         return projectMemberRepository.findByUserAndProject(user, project)
                 .map(member -> member.isAcceptedInvite())
@@ -26,10 +25,7 @@ public class ProjectAuthorizationService {
     }
     public boolean isAdmin(User user, Project project) {
         return projectMemberRepository.findByUserAndProject(user, project)
-                .map(member -> {
-                    boolean isPrivileged = member.getProjectRole() == EProjectRole.ADMIN || member.getProjectRole() == EProjectRole.OWNER;
-                    return isPrivileged && member.isAcceptedInvite();
-                })
+                .map(member -> member.getProjectRole().isPrivileged() && member.isAcceptedInvite())
                 .orElse(false);
     }
 

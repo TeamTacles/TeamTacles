@@ -25,7 +25,7 @@ public class TeamAuthorizationService  {
 
     public boolean isAdmin(User user, Team team) {
         return teamMemberRepository.findByUserAndTeam(user, team)
-                .map(member -> member.getTeamRole() == ETeamRole.ADMIN || member.getTeamRole() == ETeamRole.OWNER && member.isAcceptedInvite())
+                .map(member -> member.getTeamRole().isPrivileged() && member.isAcceptedInvite())
                 .orElse(false);
     }
 

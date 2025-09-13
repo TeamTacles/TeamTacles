@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class UpdateMemberRoleRequestDTO {
+public class UpdateMemberRoleTeamRequestDTO {
 
     @NotNull(message = "The new role cannot be null")
     private ETeamRole newRole;

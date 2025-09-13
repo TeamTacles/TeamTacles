@@ -12,11 +12,8 @@ import java.util.Optional;
 
 @Repository
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
-
     Optional<ProjectMember> findByUserAndProject(User user, Project project);
-
     Page<ProjectMember> findByUserAndAcceptedInviteTrue(User user, Pageable pageable);
-
+    Page<ProjectMember> findByProjectAndAcceptedInviteTrue(Project project, Pageable pageable);
     Optional<ProjectMember> findByInvitationToken(String token);
-
 }

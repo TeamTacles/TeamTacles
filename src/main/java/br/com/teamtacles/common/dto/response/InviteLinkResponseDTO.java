@@ -1,4 +1,4 @@
-package br.com.teamtacles.team.dto.response;
+package br.com.teamtacles.common.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

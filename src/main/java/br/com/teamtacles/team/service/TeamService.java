@@ -4,9 +4,9 @@ import br.com.teamtacles.common.service.EmailService;
 import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
-import br.com.teamtacles.team.dto.request.UpdateMemberRoleRequestDTO;
-import br.com.teamtacles.common.dto.page.PagedResponse;
-import br.com.teamtacles.team.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
+import br.com.teamtacles.common.dto.response.page.PagedResponse;
+import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamResponseDTO;
 import br.com.teamtacles.team.dto.response.UserTeamResponseDTO;
@@ -103,7 +103,7 @@ public class TeamService {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
 
-        TeamMember membership = findByInvitationTokenORThrow(token);
+        TeamMember membership = findByInvitationTokenEmailORThrow(token);
 
         if(membership.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new ResourceNotFoundException("Invitation token has expired.");
@@ -121,7 +121,7 @@ public class TeamService {
         Team team = findTeamByIdOrThrow(teamId);
         teamAuthorizationService.checkTeamOwner(actingUser, team);
 
-        if(!team.getName().equalsIgnoreCase(dto.getName())){
+        if(dto.getName() != null && !team.getName().equalsIgnoreCase(dto.getName())){
             validateTeamNameUniqueness(dto.getName(), team.getOwner());
         }
 
@@ -129,7 +129,7 @@ public class TeamService {
             team.setName(dto.getName());
         }
 
-        if(dto.getDescription() != null && !dto.getDescription().isEmpty()){
+        if(dto.getDescription() != null){
             team.setDescription(dto.getDescription());
         }
 
@@ -138,7 +138,7 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamMemberResponseDTO updateMemberRole(Long teamId, Long userIdToUpdate, UpdateMemberRoleRequestDTO dto, User actingUser) {
+    public TeamMemberResponseDTO updateMemberRole(Long teamId, Long userIdToUpdate, UpdateMemberRoleTeamRequestDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
@@ -240,7 +240,7 @@ public class TeamService {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
 
-        Team team = findByInvitationTokenOrThrow(token);
+        Team team = findByInvitationTokenLinkOrThrow(token);
 
         if(team.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new ResourceNotFoundException("Invitation token has expired.");
@@ -267,7 +267,7 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
     }
 
-    private Team findByInvitationTokenOrThrow(String token) {
+    private Team findByInvitationTokenLinkOrThrow(String token) {
         return teamRepository.findByInvitationToken(token)
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation."));
     }
@@ -282,12 +282,12 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email"));
     }
 
-    private TeamMember findMembershipByIdOrThrow(User userToUpdate, Team team) {
-        return teamMemberRepository.findByUserAndTeam(userToUpdate, team)
+    private TeamMember findMembershipByIdOrThrow(User user, Team team) {
+        return teamMemberRepository.findByUserAndTeam(user, team)
                 .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this team."));
     }
 
-    private TeamMember findByInvitationTokenORThrow(String token) {
+    private TeamMember findByInvitationTokenEmailORThrow(String token) {
         return teamMemberRepository.findByInvitationToken(token)
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation."));
     }

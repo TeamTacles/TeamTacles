@@ -2,7 +2,7 @@ package br.com.teamtacles.common.mapper;
 
 import org.springframework.data.domain.Page;
 
-import br.com.teamtacles.common.dto.page.PagedResponse;
+import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 

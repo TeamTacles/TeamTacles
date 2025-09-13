@@ -3,9 +3,9 @@ package br.com.teamtacles.team.controller;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
-import br.com.teamtacles.team.dto.request.UpdateMemberRoleRequestDTO;
-import br.com.teamtacles.common.dto.page.PagedResponse;
-import br.com.teamtacles.team.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
+import br.com.teamtacles.common.dto.response.page.PagedResponse;
+import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamResponseDTO;
 import br.com.teamtacles.team.dto.response.UserTeamResponseDTO;
@@ -106,7 +106,7 @@ public class TeamController {
     public ResponseEntity<TeamMemberResponseDTO> updateMemberRole(
             @PathVariable Long teamId,
             @PathVariable Long userId,
-            @RequestBody @Valid UpdateMemberRoleRequestDTO dto,
+            @RequestBody @Valid UpdateMemberRoleTeamRequestDTO dto,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         TeamMemberResponseDTO updatedMember = teamService.updateMemberRole(teamId, userId, dto, authenticatedUser.getUser());
         return ResponseEntity.ok(updatedMember);
