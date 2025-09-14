@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"roles", "teamMemberships"})
+@ToString(exclude = {"password", "roles", "teamMemberships", "projectMemberships"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="users")
@@ -57,7 +57,9 @@ public class User {
     private Set<ProjectMember> projectMemberships = new HashSet<>();
 
     private String verificationToken;
+
     private LocalDateTime verificationTokenExpiry;
+
     private boolean enabled = false;
 
     @PrePersist

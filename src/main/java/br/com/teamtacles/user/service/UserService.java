@@ -10,15 +10,14 @@ import br.com.teamtacles.user.model.Role;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
+import br.com.teamtacles.user.validator.NewPasswordValidator;
 import br.com.teamtacles.user.validator.PasswordMatchValidator;
+import br.com.teamtacles.user.validator.UserTokenValidator;
+import br.com.teamtacles.user.validator.UserUniquenessValidator;
 import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import br.com.teamtacles.user.validator.PasswordMatchValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -27,52 +26,48 @@ import java.util.UUID;
 @Service
 public class UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ModelMapper modelMapper;
+    private final UserTokenValidator userTokenValidator;
+    private final NewPasswordValidator newPasswordValidator;
     private final PasswordMatchValidator passwordMatchValidator;
+    private final UserUniquenessValidator userUniquenessValidator;
+
     private final EmailService emailService;
 
-    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder, ModelMapper modelMapper, RoleRepository roleRepository, PasswordMatchValidator passwordMatchValidator, EmailService emailService) {
+    private final ModelMapper modelMapper;
+
+    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder,
+                       ModelMapper modelMapper, RoleRepository roleRepository,
+                       PasswordMatchValidator passwordMatchValidator, EmailService emailService,
+                       UserUniquenessValidator userUniquenessValidator,
+                       UserTokenValidator userTokenValidator,
+                       NewPasswordValidator newPasswordValidator) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.passwordMatchValidator = passwordMatchValidator;
         this.emailService = emailService;
+        this.userUniquenessValidator = userUniquenessValidator;
+        this.userTokenValidator = userTokenValidator;
+        this.newPasswordValidator = newPasswordValidator;
     }
 
     @Transactional
-    public UserResponseDTO createUser(UserRequestRegisterDTO userRequestRegisterDTO) {
-        log.info("Attempting to create a new user with username: {}", userRequestRegisterDTO.getUsername());
-        if(userRepository.existsByUsername(userRequestRegisterDTO.getUsername())){
-            log.warn("User creation failed: Username {} already exists", userRequestRegisterDTO.getUsername());
-            throw new UsernameAlreadyExistsException("Username/email already exists");
-        }
-
-        if(userRepository.existsByEmail(userRequestRegisterDTO.getEmail())){
-            log.info("User creation failed: Email {} already exists", userRequestRegisterDTO.getEmail());
-
-            throw new EmailAlreadyExistsException("Username/email already exists");
-        }
-
-        if(!userRequestRegisterDTO.getPassword().equals(userRequestRegisterDTO.getPasswordConfirm())){
-            log.warn("User creation failed for username {}: password and confirmation do not match.", userRequestRegisterDTO.getUsername());
-            throw new PasswordMismatchException("Password and confirmation don't match");
-        }
-        log.debug("User creation validations passed for username: {}. Proceeding to create user entity.", userRequestRegisterDTO.getUsername());
-
+    public UserResponseDTO createUser(UserRequestRegisterDTO registerDTO) {
+        userUniquenessValidator.validate(registerDTO);
+        passwordMatchValidator.validate(registerDTO.getPassword(), registerDTO.getPasswordConfirm());
 
         User user = new User();
-        user.setUsername(userRequestRegisterDTO.getUsername());
-        user.setEmail(userRequestRegisterDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(userRequestRegisterDTO.getPassword()));
+        user.setUsername(registerDTO.getUsername());
+        user.setEmail(registerDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         Role userRole = roleRepository.findByRoleName(ERole.USER)
                 .orElseThrow(() -> new ResourceNotFoundException("Error: Role USER not found."));
         user.setRoles(Set.of(userRole));
+
         String token = UUID.randomUUID().toString();
         user.setVerificationToken(token);
         user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(1));
@@ -80,12 +75,24 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         emailService.sendVerificationEmail(savedUser.getEmail(), token);
-        log.info("User created successfully with ID: {}", savedUser.getId());
 
+        return modelMapper.map(savedUser, UserResponseDTO.class);
+    }
 
-        UserResponseDTO userResponseDTO = modelMapper.map(savedUser, UserResponseDTO.class);
+    @Transactional
+    public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
+        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank()) {
+            user.setUsername(userRequestDTO.getUsername());
+        }
 
-        return userResponseDTO;
+        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
+            user.setEmail(userRequestDTO.getEmail());
+        }
+
+        handlePasswordUpdate(userRequestDTO, user);
+
+        User updatedUser = userRepository.save(user);
+        return modelMapper.map(updatedUser, UserResponseDTO.class);
     }
     
     public UserResponseDTO getUserById(User user) {
@@ -93,62 +100,51 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
-        log.info("Attempting to update user with ID: {}", user.getId());
-
-        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank()) {
-            log.debug("Updating username from '{}' to '{}'", user.getUsername(), userRequestDTO.getUsername());
-            user.setUsername(userRequestDTO.getUsername());
-        }
-
-        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
-            log.debug("Updating email from '{}' to '{}'", user.getEmail(), userRequestDTO.getEmail());
-            user.setEmail(userRequestDTO.getEmail());
-        }
-
-        handlePasswordUpdate(userRequestDTO, user);
-
-        User updatedUser = userRepository.save(user);
-        log.info("User {} successfully updated", user.getId());
-        return modelMapper.map(updatedUser, UserResponseDTO.class);
-    }
-
-    @Transactional
-    public void deleteUser(User user) {
-        log.info("Attempting to delete user with ID: {}", user.getId());
-        userRepository.delete(user);
-        log.info("User {} successfully deleted", user.getId());
-    }
-
-    @Transactional
     public void resetPassword(String token, String newPassword, String passwordConfirm) {
-        log.info("Processing password reset request with token");
-
         passwordMatchValidator.validate(newPassword, passwordConfirm);
 
-        User user = userRepository.findByResetPasswordToken(token)
-                .orElseThrow(() -> {
-                    log.warn("Password reset failed: Invalid or expired token");
-                    return new ResourceNotFoundException("Validation token is invalid or has expired.");
-                });
+        User user = findByResetPasswordTokenOrThrow(token);
 
-        if (user.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
-            log.warn("Password reset failed: Token expired for user ID: {}", user.getId());
-            throw new IllegalArgumentException("Validation token is invalid or has expired.");
-        }
+        userTokenValidator.validatePasswordResetToken(user);
+        newPasswordValidator.validate(newPassword, user.getPassword());
 
-        if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
-            log.warn("Password reset failed: New password same as current for user ID: {}", user.getId());
-            throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
-        }
-
-        log.debug("Updating password for user ID: {}", user.getId());
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetPasswordToken(null);
         user.setResetPasswordTokenExpiry(null);
 
         userRepository.save(user);
-        log.info("Password successfully reset for user ID: {}", user.getId());
+    }
+
+    @Transactional
+    public void verifyUser(String token) {
+        User user = findByVerificationTokenOrThrow(token);
+        userTokenValidator.validateVerificationToken(user);
+
+        user.setEnabled(true);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            if (!user.isEnabled()) {
+
+                String token = UUID.randomUUID().toString();
+                user.setVerificationToken(token);
+                user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+
+                userRepository.save(user);
+                emailService.sendVerificationEmail(user.getEmail(), token);
+            }
+        });
+    }
+
+    @Transactional
+    public void deleteUser(User user) {
+        userRepository.delete(user);
     }
 
     private void handlePasswordUpdate(UserRequestUpdateDTO userRequestDTO, User user) {
@@ -160,62 +156,14 @@ public class UserService {
 
             if (newPassword == null || newPassword.isBlank() ||
                     passwordConfirm == null || passwordConfirm.isBlank()) {
-                log.warn("Password update failed for user {}: Missing password or confirmation", user.getId());
                 throw new IllegalArgumentException("To change the password, you must provide both the new password and its confirmation.");
             }
 
             passwordMatchValidator.validate(newPassword, passwordConfirm);
+            newPasswordValidator.validate(newPassword, user.getPassword());
 
-            if (isSameAsCurrentPassword(newPassword, user.getPassword())) {
-                log.warn("Password update failed for user {}: New password same as current", user.getId());
-                throw new SameAsCurrentPasswordException("The new password cannot be the same as the current one.");
-            }
-
-            log.debug("Updating password for user ID: {}", user.getId());
             user.setPassword(passwordEncoder.encode(newPassword));
         }
-    }
-
-    @Transactional
-    public void verifyUser(String token) {
-        log.info("Processing user verification with token");
-
-        User user = userRepository.findByVerificationToken(token)
-                .orElseThrow(() -> {
-                    log.warn("User verification failed: Invalid token");
-                    return new ResourceNotFoundException("Verification token is invalid or has expired.");
-                });
-
-        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            log.warn("User verification failed: Token expired for user ID: {}", user.getId());
-            throw new IllegalArgumentException("The verification token has expired.");
-        }
-
-        user.setEnabled(true);
-        user.setVerificationToken(null);
-        user.setVerificationTokenExpiry(null);
-
-        userRepository.save(user);
-        log.info("User ID: {} successfully verified", user.getId());
-    }
-
-    @Transactional
-    public void resendVerificationEmail(String email) {
-        log.info("Attempting to resend verification email to: {}", email);
-
-        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
-            if (!user.isEnabled()) {
-                log.debug("User {} not yet verified, generating new token", user.getId());
-                String token = UUID.randomUUID().toString();
-                user.setVerificationToken(token);
-                user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
-                userRepository.save(user);
-                emailService.sendVerificationEmail(user.getEmail(), token);
-                log.info("Verification email resent successfully to: {}", email);
-            } else {
-                log.debug("Resend verification skipped: User {} is already verified", user.getId());
-            }
-        });
     }
 
     public User findUserEntityById(Long userId) {
@@ -234,6 +182,16 @@ public class UserService {
     private User findByEmailIgnoreCaseOrThrow(String email) {
         return userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+    }
+
+    private User findByResetPasswordTokenOrThrow(String token) {
+        return userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Validation token is invalid or has expired."));
+    }
+
+    private User findByVerificationTokenOrThrow(String token) {
+        return userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Verification token is invalid or has expired."));
     }
 
     private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
