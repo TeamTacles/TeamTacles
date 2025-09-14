@@ -60,6 +60,15 @@ public class ProjectController {
         return ResponseEntity.ok(projectMemberDTO);
     }
 
+    @PostMapping("/{projectId}/import-team/{teamId}")
+    public ResponseEntity<Void> importTeamToProject(
+            @PathVariable Long projectId,
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        projectService.importTeamMembersToProject(projectId, teamId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{projectId}/member/{userId}/role")
     public ResponseEntity<ProjectMemberResponseDTO> updateMemberRole(
             @PathVariable Long projectId,

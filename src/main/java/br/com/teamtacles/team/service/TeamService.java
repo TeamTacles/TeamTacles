@@ -69,7 +69,7 @@ public class TeamService {
 
         TeamMember creatorMembership = new TeamMember(actingUser, newTeam, ETeamRole.OWNER);
         creatorMembership.setAcceptedInvite(true);
-        newTeam.getMembers().add(creatorMembership);
+        newTeam.addMember(creatorMembership);
 
         Team savedTeam = teamRepository.save(newTeam);
         log.info("Team '{}' created successfully with ID: {} by user {}", savedTeam.getName(), savedTeam.getId(), actingUser.getUsername());
@@ -102,7 +102,9 @@ public class TeamService {
         newMember.setInvitationToken(token);
         newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
 
-        teamMemberRepository.save(newMember);
+        team.addMember(newMember);
+        teamRepository.save(team);
+
         log.info("User {} invited successfully to team ID: {} with role {}. Invitation token generated.",
             userToInvite.getUsername(), teamId, dto.getRole());
 
@@ -250,6 +252,7 @@ public class TeamService {
     @Transactional
     public void deleteMembershipFromTeam(Long teamId, Long userIdToDelete, User actingUser) {
         log.info("User {} attempting to remove user {} from team {}", actingUser.getUsername(), userIdToDelete, teamId);
+
         Team team = findTeamByIdOrThrow(teamId);
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
@@ -262,18 +265,23 @@ public class TeamService {
 
         if (actingUserIsOwner && membershipToDelete.equals(actingMembership)) {
             log.warn("Owner {} attempted to remove themselves from team {}", actingUser.getUsername(), teamId);
+
             throw new AccessDeniedException("OWNER cannot remove themselves.");
         }
 
         if (!actingUserIsOwner && targetIsPrivileged) {
             log.warn("Non-owner user {} attempted to remove privileged member {} from team {}",
                 actingUser.getUsername(), userToDelete.getUsername(), teamId);
+
             throw new AccessDeniedException("You cannot remove a member with role OWNER or ADMIN.");
         }
 
         log.debug("Removing member {} (role: {}) from team {}",
-            userToDelete.getUsername(), membershipToDelete.getTeamRole(), teamId);
-        teamMemberRepository.delete(membershipToDelete);
+                userToDelete.getUsername(), membershipToDelete.getTeamRole(), teamId);
+
+        team.removeMember(membershipToDelete);
+        teamRepository.save(team);
+
         log.info("User {} successfully removed from team {} by {}",
             userToDelete.getUsername(), teamId, actingUser.getUsername());
     }
@@ -322,10 +330,12 @@ public class TeamService {
         TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
         newMember.setAcceptedInvite(true);
 
-        TeamMember savedMember = teamMemberRepository.save(newMember);
+        team.addMember(newMember);
+        teamRepository.save(team);
+
         log.info("User {} successfully joined team {} via invitation link", actingUser.getUsername(), team.getId());
 
-        return toTeamMemberResponseDTO(savedMember);
+        return toTeamMemberResponseDTO(newMember);
     }
 
     private void validateTeamNameUniqueness(String name, User owner){

@@ -49,4 +49,14 @@ public class Team {
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();
     }
+
+    public void addMember(TeamMember member) {
+        this.members.add(member);
+        member.setTeam(this);
+    }
+
+    public void removeMember(TeamMember member) {
+        this.members.remove(member);
+        member.setTeam(null);
+    }
 }

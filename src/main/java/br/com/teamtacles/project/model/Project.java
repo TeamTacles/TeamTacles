@@ -50,4 +50,14 @@ public class Project {
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();
     }
+
+    public void addMember(ProjectMember member) {
+        this.members.add(member);
+        member.setProject(this);
+    }
+
+    public void removeMember(ProjectMember member) {
+        this.members.remove(member);
+        member.setProject(null);
+    }
 }

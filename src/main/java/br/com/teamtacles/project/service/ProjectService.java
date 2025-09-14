@@ -17,8 +17,10 @@ import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
-import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
-import br.com.teamtacles.team.enumeration.ETeamRole;
+import br.com.teamtacles.team.model.Team;
+import br.com.teamtacles.team.model.TeamMember;
+import br.com.teamtacles.team.repository.TeamRepository;
+import br.com.teamtacles.team.service.TeamAuthorizationService;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.UserRepository; // Import necessário
 import org.modelmapper.ModelMapper;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -49,9 +52,16 @@ public class ProjectService {
     private final ProjectAuthorizationService projectAuthorizationService;
     private final PagedResponseMapper pagedResponseMapper;
     private final UserRepository userRepository;
-    private  final EmailService emailService;
+    private final EmailService emailService;
+    private final TeamRepository teamRepository;
+    private final TeamAuthorizationService teamAuthorizationService;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository, ModelMapper modelMapper, ProjectAuthorizationService projectAuthorizationService, PagedResponseMapper pagedResponseMapper, UserRepository userRepository, EmailService emailService) {
+    public ProjectService(
+            ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
+            ModelMapper modelMapper, ProjectAuthorizationService projectAuthorizationService,
+            PagedResponseMapper pagedResponseMapper, UserRepository userRepository,
+            EmailService emailService, TeamRepository teamRepository,
+            TeamAuthorizationService teamAuthorizationService) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.modelMapper = modelMapper;
@@ -59,7 +69,8 @@ public class ProjectService {
         this.pagedResponseMapper = pagedResponseMapper;
         this.userRepository = userRepository;
         this.emailService = emailService;
-
+        this.teamRepository = teamRepository;
+        this.teamAuthorizationService = teamAuthorizationService;
     }
 
     @Transactional
@@ -72,7 +83,7 @@ public class ProjectService {
 
         ProjectMember creatorMembership = new ProjectMember(actingUser, newProject, EProjectRole.OWNER);
         creatorMembership.setAcceptedInvite(true);
-        newProject.getMembers().add(creatorMembership);
+        newProject.addMember(creatorMembership);
 
         Project savedProject = projectRepository.save(newProject);
         log.info("Project '{}' created successfully with ID: {} for user {}", savedProject.getTitle(), savedProject.getId(), actingUser.getUsername());
@@ -141,6 +152,29 @@ public class ProjectService {
         log.info("Role successfully updated for user {} to {} in project {}",
             userToUpdate.getUsername(), dto.getNewRole(), projectId);
         return toProjectMemberResponseDTO(updatedMembership);
+    }
+
+    @Transactional
+    public void importTeamMembersToProject(Long projectId, Long teamId, User actingUser) {
+        Project project = findProjectByIdOrThrow(projectId);
+        projectAuthorizationService.checkProjectAdmin(actingUser, project);
+
+        Team teamToImport = findTeamByIdOrThrow(teamId);
+        teamAuthorizationService.checkTeamMembership(actingUser, teamToImport);
+
+        Set<TeamMember> teamMembers = teamToImport.getMembers();
+
+        for (TeamMember teamMember : teamMembers) {
+            boolean teamMemberAlreadyInProject = project.getMembers().stream()
+                    .anyMatch(present -> present.getUser().equals(teamMember.getUser()));
+
+            if(!teamMemberAlreadyInProject) {
+                ProjectMember newProjectMembership = new ProjectMember(teamMember.getUser(), project, EProjectRole.MEMBER);
+                project.addMember(newProjectMembership);
+            }
+        }
+
+        projectRepository.save(project);
     }
 
     public ProjectResponseDTO getProjectById(Long projectId, User actingUser) {
@@ -216,7 +250,10 @@ public class ProjectService {
 
         log.debug("Removing member {} (role: {}) from project {}",
             userToDelete.getUsername(), membershipToDelete.getProjectRole(), projectId);
-        projectMemberRepository.delete(membershipToDelete);
+
+        project.removeMember(membershipToDelete);
+        projectRepository.save(project);
+
         log.info("User {} successfully removed from project {} by {}",
             userToDelete.getUsername(), projectId, actingUser.getUsername());
     }
@@ -243,7 +280,9 @@ public class ProjectService {
         newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
         newMember.setAcceptedInvite(false);
 
-        projectMemberRepository.save(newMember);
+        project.addMember(newMember);
+        projectRepository.save(project);
+
         log.info("User {} invited successfully to project ID: {}. Invitation token generated.", userToInvite.getUsername(), projectId);
 
         emailService.sendProjectInvitationEmail( userToInvite.getEmail(), project.getTitle(), newMember.getInvitationToken());
@@ -255,6 +294,7 @@ public class ProjectService {
 
         if (token == null || token.isEmpty()) {
             log.warn("Attempt to accept invitation with null or empty token");
+
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
 
@@ -262,6 +302,7 @@ public class ProjectService {
 
         if (membership.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
             log.warn("Attempt to accept expired invitation token for project: {}", membership.getProject().getId());
+
             throw new ResourceNotFoundException("Invitation token has expired.");
         }
 
@@ -273,6 +314,7 @@ public class ProjectService {
         membership.setInvitationTokenExpiry(null);
 
         projectMemberRepository.save(membership);
+
         log.info("Invitation accepted successfully for user {} in project {}",
             membership.getUser().getUsername(), membership.getProject().getId());
     }
@@ -289,6 +331,7 @@ public class ProjectService {
         project.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
 
         projectRepository.save(project);
+
         log.info("Invitation link generated for project {} by user {}. Expires: {}",
             projectId, actingUser.getUsername(), project.getInvitationTokenExpiry());
 
@@ -302,6 +345,7 @@ public class ProjectService {
 
         if (token == null || token.isEmpty()) {
             log.warn("Attempt to accept invitation with null or empty token by user: {}", actingUser.getUsername());
+
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
 
@@ -309,14 +353,18 @@ public class ProjectService {
 
         if(project.getInvitationTokenExpiry().isBefore(LocalDateTime.now())) {
             log.warn("User {} attempted to accept expired invitation for project: {}", actingUser.getUsername(), project.getId());
+
             throw new ResourceNotFoundException("Invitation token has expired.");
         }
 
         log.debug("Creating new membership for user {} in project {}", actingUser.getUsername(), project.getId());
+
         ProjectMember newMember = new ProjectMember(actingUser, project, EProjectRole.MEMBER);
         newMember.setAcceptedInvite(true);
 
-        ProjectMember savedMember = projectMemberRepository.save(newMember);
+        project.addMember(newMember);
+        projectRepository.save(project);
+
         log.info("User {} successfully joined project {} via invitation link", actingUser.getUsername(), project.getId());
 
         return toProjectMemberResponseDTO(newMember);
@@ -355,6 +403,11 @@ public class ProjectService {
     private ProjectMember findMembershipByIdOrThrow(User user, Project project) {
         return projectMemberRepository.findByUserAndProject(user, project)
                 .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this team."));
+    }
+
+    private Team findTeamByIdOrThrow(Long teamId) {
+        return teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
     }
 
     private ProjectMemberResponseDTO toProjectMemberResponseDTO(ProjectMember membership) {
