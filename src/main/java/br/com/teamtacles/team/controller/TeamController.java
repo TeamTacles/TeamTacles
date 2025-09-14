@@ -46,7 +46,7 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @PostMapping("/accept-invite")
+    @GetMapping("/accept-invite")
     public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
         teamService.acceptInvitation(token);
         return ResponseEntity.ok("Invitation accepted successfully.");

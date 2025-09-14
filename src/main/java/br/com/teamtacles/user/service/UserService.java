@@ -218,6 +218,24 @@ public class UserService {
         });
     }
 
+    public User findUserEntityById(Long userId) {
+        return findUserByIdOrThrow(userId);
+    }
+
+    public User findUserEntityByEmail(String email) {
+        return findByEmailIgnoreCaseOrThrow(email);
+    }
+
+    private User findUserByIdOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    }
+
+    private User findByEmailIgnoreCaseOrThrow(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+    }
+
     private boolean isSameAsCurrentPassword(String providedPassword, String currentPasswordHash) {
         return passwordEncoder.matches(providedPassword, currentPasswordHash);
     }

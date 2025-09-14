@@ -344,6 +344,10 @@ public class TeamService {
         }
     }
 
+    public Team findTeamEntityById(Long teamId) {
+        return findTeamByIdOrThrow(teamId);
+    }
+
     private Team findTeamByIdOrThrow(Long teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
