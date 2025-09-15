@@ -1,5 +1,6 @@
 package br.com.teamtacles.team.controller;
 
+import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
@@ -47,9 +48,9 @@ public class TeamController {
     }
 
     @GetMapping("/accept-invite")
-    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
+    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
         teamService.acceptInvitation(token);
-        return ResponseEntity.ok("Invitation accepted successfully.");
+        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
     }
 
     @PostMapping("/{teamId}/invite-link")

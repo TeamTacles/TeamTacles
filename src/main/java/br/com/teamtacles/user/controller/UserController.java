@@ -1,5 +1,6 @@
 package br.com.teamtacles.user.controller;
 
+import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
@@ -23,16 +24,16 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody @Valid UserRequestRegisterDTO userRequestRegisterDTO) {
+    public ResponseEntity<MessageResponseDTO> registerUser(@RequestBody @Valid UserRequestRegisterDTO userRequestRegisterDTO) {
         userService.createUser(userRequestRegisterDTO);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("User registered successfully. Please check your email to verify your account.");
+                .body(new MessageResponseDTO("User registered successfully. Please check your email to verify your account."));
     }
 
     @GetMapping("/verify-account")
-    public ResponseEntity<String> verifyAccount(@RequestParam("token") String token) {
+    public ResponseEntity<MessageResponseDTO> verifyAccount(@RequestParam("token") String token) {
         userService.verifyUser(token);
-        return ResponseEntity.ok("Your account has been successfully verified.");
+        return ResponseEntity.ok(new MessageResponseDTO("Your account has been successfully verified."));
     }
 
     @GetMapping

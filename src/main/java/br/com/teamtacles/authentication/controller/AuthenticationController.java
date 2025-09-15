@@ -2,6 +2,7 @@ package br.com.teamtacles.authentication.controller;
 
 import br.com.teamtacles.authentication.service.AuthenticationService;
 import br.com.teamtacles.authentication.dto.AuthenticationDTO;
+import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,13 +48,13 @@ public class AuthenticationController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody @Valid ResetPasswordDTO request) {
+    public ResponseEntity<MessageResponseDTO> resetPassword(@RequestBody @Valid ResetPasswordDTO request) {
         userService.resetPassword(request.getToken(), request.getNewPassword(), request.getPasswordConfirm());
-        return ResponseEntity.ok("Password has been reset successfully.");
+        return ResponseEntity.ok(new MessageResponseDTO("Password has been reset successfully."));
     }
     @PostMapping("/resend-verification")
-    public ResponseEntity<String> resendVerification(@RequestBody @Valid ForgotPasswordRequestDTO request) {
+    public ResponseEntity<MessageResponseDTO> resendVerification(@RequestBody @Valid ForgotPasswordRequestDTO request) {
         userService.resendVerificationEmail(request.getEmail());
-        return ResponseEntity.ok("If the email is registered, a verification email has been sent.");
+        return ResponseEntity.ok(new MessageResponseDTO("If the email is registered, a verification email has been sent."));
     }
 }

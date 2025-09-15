@@ -1,5 +1,6 @@
 package br.com.teamtacles.project.controller;
 
+import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
 import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
@@ -96,9 +97,9 @@ public class ProjectController {
     }
 
     @GetMapping("/accept-invite") // para o browser GET permite clique no link
-    public ResponseEntity<String> acceptInvitation(@RequestParam String token) {
+    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
         projectService.acceptInvitation(token);
-        return ResponseEntity.ok("Invitation accepted successfully.");
+        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
     }
 
     @GetMapping("/{projectId}/members")
