@@ -12,9 +12,14 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -27,6 +32,8 @@ public class EmailService {
 
     @Async
     public void sendPasswordResetEmail(String to, String token) {
+        log.info("[EMAIL-ACTION] Attempting to send 'password-reset-email' to '{}'", to);
+
         try {
             Context context = new Context();
             context.setVariable("resetUrl", baseUrl + "/reset-password?token=" + token);
@@ -42,13 +49,18 @@ public class EmailService {
             helper.addInline("logo", new ClassPathResource("static/images/Reset_Password.png"));
 
             mailSender.send(message);
+            log.info("[EMAIL-SUCCESS] Successfully sent 'password-reset-email' to '{}'", to);
+
         } catch (MessagingException e) {
+            log.error("[EMAIL-FAILURE] Failed to send 'password-reset-email' to '{}'. Error: {}", to, e.getMessage(), e);
             throw new RuntimeException("Failed to send email", e);
         }
     }
 
     @Async
     public void sendTeamInvitationEmail(String to, String teamName, String token) {
+        log.info("[EMAIL-ACTION] Attempting to send 'team-invitation-email' to '{}' for team '{}'", to, teamName);
+
         try {
             Context context = new Context();
             context.setVariable("teamName", teamName);
@@ -65,7 +77,10 @@ public class EmailService {
             helper.addInline("teamLogo", new ClassPathResource("static/images/Invite_team.png"));
 
             mailSender.send(message);
+            log.info("[EMAIL-SUCCESS] Successfully sent 'team-invitation-email' to '{}' for team '{}'", to, teamName);
         } catch (MessagingException e) {
+            log.error("[EMAIL-FAILURE] Failed to send 'team-invitation-email' to '{}' for team '{}'. Error: {}", to, teamName, e.getMessage(), e);
+
             throw new RuntimeException("Failed to send invitation email", e);
         }
     }
@@ -73,6 +88,7 @@ public class EmailService {
 
     @Async
     public void sendProjectInvitationEmail(String to, String projectName, String token) {
+        log.info("[EMAIL-ACTION] Attempting to send 'project-invitation-email' to '{}' for project '{}'", to, projectName);
         try {
             Context context = new Context();
             context.setVariable("projectName", projectName);
@@ -90,13 +106,16 @@ public class EmailService {
             helper.addInline("projectLogo", new ClassPathResource("static/images/Invite_Project.png"));
 
             mailSender.send(message);
+            log.info("[EMAIL-SUCCESS] Successfully sent 'project-invitation-email' to '{}' for project '{}'", to, projectName);
         } catch (MessagingException e) {
+            log.error("[EMAIL-FAILURE] Failed to send 'project-invitation-email' to '{}' for project '{}'. Error: {}", to, projectName, e.getMessage(), e);
             throw new RuntimeException("Failed to send project invitation email", e);
         }
     }
 
     @Async
     public void sendVerificationEmail(String to, String token) {
+        log.info("[EMAIL-ACTION] Attempting to send 'verification-email' to '{}'", to);
         try {
             Context context = new Context();
             context.setVariable("verificationUrl", baseUrl + "/api/user/verify-account?token=" + token);
@@ -112,7 +131,9 @@ public class EmailService {
             helper.addInline("welcomeLogo", new ClassPathResource("static/images/Welcome_message.png"));
 
             mailSender.send(message);
+            log.info("[EMAIL-SUCCESS] Successfully sent 'verification-email' to '{}'", to);
         } catch (MessagingException e) {
+            log.error("[EMAIL-FAILURE] Failed to send 'verification-email' to '{}'. Error: {}", to, e.getMessage(), e);
             throw new RuntimeException("Failed to send verification email", e);
         }
     }
