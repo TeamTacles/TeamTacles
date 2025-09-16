@@ -12,6 +12,7 @@ import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
 import br.com.teamtacles.user.validator.PasswordMatchValidator;
+import br.com.teamtacles.user.validator.UserTokenValidator;
 import br.com.teamtacles.user.validator.UserUniquenessValidator;
 import br.com.teamtacles.utils.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,6 +54,9 @@ public class UserServiceTest {
 
     @Mock
     private PasswordMatchValidator passwordMatchValidator;
+
+    @Mock
+    private UserTokenValidator userTokenValidator;
 
     @Mock
     private EmailService emailService;
@@ -178,13 +183,69 @@ public class UserServiceTest {
         verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
     }
 
-    // USER VERIFICATION
+    // ACCOUNT VERIFICATION/CONFIRMATION
+
+    @Test
+    @DisplayName("2.1- ShouldVerifyUserSuccessfully_WhenTokenIsValidAndNotExpired")
+    void shouldVerifyUserSucessfully_WhenTokenIsValidAndNotExpired() {
+
+
+        User unverifiedUser = TestDataFactory.createUnverifiedUser();
+        String validToken = unverifiedUser.getVerificationToken();
+
+        when(userRepository.findByVerificationToken(validToken)).thenReturn(Optional.of(unverifiedUser));
+        doNothing().when(userTokenValidator).validateVerificationToken(any(User.class));
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+
+        userService.verifyUser(validToken);
+
+        verify(userRepository, times(1)).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+
+        assertTrue(savedUser.isEnabled(), "User must be enabled");
+        assertNull(savedUser.getVerificationToken(), "The verification token must be null");
+        assertNull(savedUser.getVerificationTokenExpiry(), "The date and time must be null");
+
+    }
+
+    @Test
+    @DisplayName("2.2 ShouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent")
+    void shouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent() {
+        String invalidToken = "non-existent-token-123";
+
+        when(userRepository.findByVerificationToken(invalidToken)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            userService.verifyUser(invalidToken);
+        });
+
+        verify(userRepository, never()).save(any(User.class));
+
+    }
+
+    @Test
+    @DisplayName("2.3 - ShouldThrowException_WhenVerificationTokenIsExpired")
+    void shouldThrowException_WhenVerificationTokenIsExpired() {
+
+        User userWithExpiredToken = TestDataFactory.createUnverifiedUser();
+        userWithExpiredToken.setVerificationTokenExpiry(LocalDateTime.now().minusHours(1));
+        String expiredToken = userWithExpiredToken.getVerificationToken();
+
+        when(userRepository.findByVerificationToken(expiredToken)).thenReturn(Optional.of(userWithExpiredToken));
+
+        doThrow(new ResourceNotFoundException("The verification token has expired."))
+                .when(userTokenValidator)
+                .validateVerificationToken(any(User.class));
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            userService.verifyUser(expiredToken);
+        });
+
+        verify(userRepository, never()).save(any(User.class));
 
 
 
-
-
-
-
+    }
 
 }
