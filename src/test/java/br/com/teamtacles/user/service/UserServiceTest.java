@@ -1,0 +1,133 @@
+package br.com.teamtacles.user.service;
+
+import br.com.teamtacles.common.exception.UsernameAlreadyExistsException;
+import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
+import br.com.teamtacles.user.dto.response.UserResponseDTO;
+import br.com.teamtacles.user.model.Role;
+import br.com.teamtacles.user.model.User;
+import br.com.teamtacles.user.repository.RoleRepository;
+import br.com.teamtacles.user.repository.UserRepository;
+import br.com.teamtacles.user.validator.PasswordMatchValidator;
+import br.com.teamtacles.user.validator.UserUniquenessValidator;
+import br.com.teamtacles.utils.TestDataFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+
+@ExtendWith(MockitoExtension.class)
+public class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UserUniquenessValidator userUniquenessValidator;
+
+    @Mock
+    private PasswordMatchValidator passwordMatchValidator;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    @InjectMocks
+    private UserService userService;
+
+    private UserRequestRegisterDTO validRequestDTO;
+    private Role defaultRole;
+
+    @BeforeEach
+    void setUp() {
+        validRequestDTO = TestDataFactory.createValidUserRequestRegisterDTO();
+        defaultRole = TestDataFactory.createDefaultUserRole();
+    }
+
+    @Test
+    @DisplayName("1.1- shouldCreateUserSuccessfully_WhenDataIsValid")
+    void shouldCreateUserSuccessfully_WhenDataIsValid() {
+
+        when(roleRepository.findByRoleName(any())).thenReturn(Optional.of(defaultRole));
+        when(passwordEncoder.encode(validRequestDTO.getPassword())).thenReturn("encodedPassword123");
+
+        ArgumentCaptor<User> userArgumentCaptor = ArgumentCaptor.forClass(User.class);
+
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
+                .thenAnswer(invocation -> {
+                    User savedUser = invocation.getArgument(0);
+                    return new UserResponseDTO(1L, savedUser.getUsername(), savedUser.getEmail());
+                });
+
+        userService.createUser(validRequestDTO);
+
+        verify(userRepository, times(1)).save(userArgumentCaptor.capture());
+
+        User savedUser = userArgumentCaptor.getValue();
+
+        assertEquals("encodedPassword123", savedUser.getPassword());
+
+        assertFalse(savedUser.isEnabled());
+
+        assertNotNull(savedUser.getVerificationToken());
+        assertNotNull(savedUser.getVerificationTokenExpiry());
+
+        verify(userUniquenessValidator, times(1)).validate(validRequestDTO);
+        verify(passwordMatchValidator, times(1)).validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
+
+        verify(emailService, times(1)).sendVerificationEmail(
+                eq(savedUser.getEmail()),
+                eq(savedUser.getVerificationToken())
+        );
+
+
+    }
+
+    @Test
+    @DisplayName("1.2- shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername")
+    void shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername() {
+        doThrow(new UsernameAlreadyExistsException("Username 'testuser' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
+
+        assertThrows(UsernameAlreadyExistsException.class, () -> {
+            userService.createUser(validRequestDTO);
+        });
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+
+
+    }
+
+    //continua...
+
+
+
+
+
+
+
+
+}
