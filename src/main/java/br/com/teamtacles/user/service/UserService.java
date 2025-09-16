@@ -83,11 +83,17 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
-        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank()) {
+        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank() && !userRequestDTO.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
+                throw new UsernameAlreadyExistsException("Username '" + userRequestDTO.getUsername() + "' already exists.");
+            }
             user.setUsername(userRequestDTO.getUsername());
         }
 
-        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
+        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank() && !userRequestDTO.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(userRequestDTO.getEmail())) {
+                throw new EmailAlreadyExistsException("Email '" + userRequestDTO.getEmail() + "' already exists.");
+            }
             user.setEmail(userRequestDTO.getEmail());
         }
 
@@ -116,6 +122,7 @@ public class UserService {
 
         userRepository.save(user);
     }
+
 
     @Transactional
     public void verifyUser(String token) {

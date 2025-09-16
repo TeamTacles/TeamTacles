@@ -31,22 +31,21 @@ public class AuthenticationService {
         return jwtService.generateToken(user);
     }
 
+    @Transactional
     public void processForgotPasswordRequest(String email) {
         Optional<User> userOptional = userRepository.findByEmailIgnoreCase(email);
 
         userOptional.ifPresent(user -> {
-            User updatedUser = createPasswordResetTokenForUser(user);
-            emailService.sendPasswordResetEmail(updatedUser.getEmail(), updatedUser.getResetPasswordToken());
+            String token = UUID.randomUUID().toString();
+            LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
+
+            user.setResetPasswordToken(token);
+            user.setResetPasswordTokenExpiry(expiryDate);
+
+            userRepository.save(user);
+
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getResetPasswordToken());
         });
     }
 
-    @Transactional
-    public User createPasswordResetTokenForUser(User user) {
-        String token = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
-
-        user.setResetPasswordToken(token);
-        user.setResetPasswordTokenExpiry(expiryDate);
-        return userRepository.save(user);
-    }
 }

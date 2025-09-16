@@ -1,22 +1,22 @@
 package br.com.teamtacles.user.service;
 
-import br.com.teamtacles.common.exception.EmailAlreadyExistsException;
-import br.com.teamtacles.common.exception.PasswordMismatchException;
-import br.com.teamtacles.common.exception.ResourceNotFoundException;
-import br.com.teamtacles.common.exception.UsernameAlreadyExistsException;
+import br.com.teamtacles.common.exception.*;
 import br.com.teamtacles.common.service.EmailService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
+import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
 import br.com.teamtacles.user.dto.response.UserResponseDTO;
 import br.com.teamtacles.user.model.Role;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
+import br.com.teamtacles.user.validator.NewPasswordValidator;
 import br.com.teamtacles.user.validator.PasswordMatchValidator;
 import br.com.teamtacles.user.validator.UserTokenValidator;
 import br.com.teamtacles.user.validator.UserUniquenessValidator;
 import br.com.teamtacles.utils.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,226 +26,384 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-
-
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private RoleRepository roleRepository;
-
     @Mock
     private PasswordEncoder passwordEncoder;
-
     @Mock
     private UserUniquenessValidator userUniquenessValidator;
-
     @Mock
     private PasswordMatchValidator passwordMatchValidator;
-
+    @Mock
+    private NewPasswordValidator newPasswordValidator;
     @Mock
     private UserTokenValidator userTokenValidator;
-
     @Mock
     private EmailService emailService;
-
     @Mock
     private ModelMapper modelMapper;
-
     @InjectMocks
     private UserService userService;
 
-    private UserRequestRegisterDTO validRequestDTO;
-    private Role defaultRole;
-
-    @BeforeEach
-    void setUp() {
-        validRequestDTO = TestDataFactory.createValidUserRequestRegisterDTO();
-        defaultRole = TestDataFactory.createDefaultUserRole();
-    }
-
-
     // 1. USER CREATION
+    @Nested
+    @DisplayName("1. User Creation Tests")
+    class UserCreationTests {
+        private UserRequestRegisterDTO validRequestDTO;
+        private Role defaultRole;
 
-    @Test
-    @DisplayName("1.1- shouldCreateUserSuccessfully_WhenDataIsValid")
-    void shouldCreateUserSuccessfully_WhenDataIsValid() {
+        @BeforeEach
+        void setUp() {
+            validRequestDTO = TestDataFactory.createValidUserRequestRegisterDTO();
+            defaultRole = TestDataFactory.createDefaultUserRole();
+        }
 
-        when(roleRepository.findByRoleName(any())).thenReturn(Optional.of(defaultRole));
-        when(passwordEncoder.encode(validRequestDTO.getPassword())).thenReturn("encodedPassword123");
+        @Test
+        @DisplayName("1.1 - shouldCreateUserSuccessfully_WhenDataIsValid")
+        void shouldCreateUserSuccessfully_WhenDataIsValid() {
+            // Given
+            when(roleRepository.findByRoleName(any())).thenReturn(Optional.of(defaultRole));
+            when(passwordEncoder.encode(validRequestDTO.getPassword())).thenReturn("encodedPassword123");
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
+                    .thenAnswer(invocation -> {
+                        User savedUser = invocation.getArgument(0);
+                        return new UserResponseDTO(1L, savedUser.getUsername(), savedUser.getEmail());
+                    });
 
-        ArgumentCaptor<User> userArgumentCaptor = ArgumentCaptor.forClass(User.class);
+            ArgumentCaptor<User> userArgumentCaptor = ArgumentCaptor.forClass(User.class);
 
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
-                .thenAnswer(invocation -> {
-                    User savedUser = invocation.getArgument(0);
-                    return new UserResponseDTO(1L, savedUser.getUsername(), savedUser.getEmail());
-                });
-
-        userService.createUser(validRequestDTO);
-
-        verify(userRepository, times(1)).save(userArgumentCaptor.capture());
-
-        User savedUser = userArgumentCaptor.getValue();
-
-        assertEquals("encodedPassword123", savedUser.getPassword());
-
-        assertFalse(savedUser.isEnabled());
-
-        assertNotNull(savedUser.getVerificationToken());
-        assertNotNull(savedUser.getVerificationTokenExpiry());
-
-        verify(userUniquenessValidator, times(1)).validate(validRequestDTO);
-        verify(passwordMatchValidator, times(1)).validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
-
-        verify(emailService, times(1)).sendVerificationEmail(
-                eq(savedUser.getEmail()),
-                eq(savedUser.getVerificationToken())
-        );
-
-    }
-
-    @Test
-    @DisplayName("1.2- shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername")
-    void shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername() {
-        doThrow(new UsernameAlreadyExistsException("Username 'testuser' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
-
-        assertThrows(UsernameAlreadyExistsException.class, () -> {
+            // When
             userService.createUser(validRequestDTO);
-        });
 
-        verify(userRepository, never()).save(any(User.class));
-        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+            // Then
+            verify(userRepository, times(1)).save(userArgumentCaptor.capture());
+            User savedUser = userArgumentCaptor.getValue();
 
+            assertThat(savedUser.getPassword()).isEqualTo("encodedPassword123");
+            assertThat(savedUser.isEnabled()).isFalse();
+            assertThat(savedUser.getVerificationToken()).isNotNull();
+            assertThat(savedUser.getVerificationTokenExpiry()).isNotNull();
 
-    }
+            verify(userUniquenessValidator, times(1)).validate(validRequestDTO);
+            verify(passwordMatchValidator, times(1)).validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
+            verify(emailService, times(1)).sendVerificationEmail(
+                    eq(savedUser.getEmail()),
+                    eq(savedUser.getVerificationToken())
+            );
+        }
 
-    @Test
-    @DisplayName("1.3 - shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail")
-    void shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail() {
+        @Test
+        @DisplayName("1.2 - shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername")
+        void shouldThrowException_WhenAttemptingToCreateUserWithExistingUsername() {
+            // Given
+            doThrow(new UsernameAlreadyExistsException("Username 'testuser' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
 
-        doThrow(new EmailAlreadyExistsException("Email 'test@gmail.com' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser(validRequestDTO))
+                    .isInstanceOf(UsernameAlreadyExistsException.class)
+                    .hasMessage("Username 'testuser' already exists");
 
-        assertThrows(EmailAlreadyExistsException.class, () -> {
-            userService.createUser(validRequestDTO);
-        });
+            verify(userRepository, never()).save(any(User.class));
+            verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+        }
 
-        verify(userRepository, never()).save(any(User.class));
-        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
-    }
+        @Test
+        @DisplayName("1.3 - shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail")
+        void shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail() {
+            // Given
+            doThrow(new EmailAlreadyExistsException("Email 'test@gmail.com' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
 
-    @Test
-    @DisplayName("1.4- ShouldThrowException_WhenPasswordsDoNotMatchOnRegistration")
-    void shouldThrowException_WhenPasswordsDoNotMatchOnRegistration() {
-        doThrow(new PasswordMismatchException("Password and confirmation dont match"))
-                .when(passwordMatchValidator)
-                .validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser(validRequestDTO))
+                    .isInstanceOf(EmailAlreadyExistsException.class)
+                    .hasMessage("Email 'test@gmail.com' already exists");
 
-        assertThrows(PasswordMismatchException.class, () -> {
-            userService.createUser(validRequestDTO);
-        });
+            verify(userRepository, never()).save(any(User.class));
+            verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+        }
 
-        verify(userRepository, never()).save(any(User.class));
-        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+        @Test
+        @DisplayName("1.4 - shouldThrowException_WhenPasswordsDoNotMatchOnRegistration")
+        void shouldThrowException_WhenPasswordsDoNotMatchOnRegistration() {
+            // Given
+            doThrow(new PasswordMismatchException("Password and confirmation dont match"))
+                    .when(passwordMatchValidator)
+                    .validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
 
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser(validRequestDTO))
+                    .isInstanceOf(PasswordMismatchException.class)
+                    .hasMessage("Password and confirmation dont match");
 
-    }
+            verify(userRepository, never()).save(any(User.class));
+            verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+        }
 
-    @Test
-    @DisplayName("1.5 - ShouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation")
-    void shouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation() {
+        @Test
+        @DisplayName("1.5 - shouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation")
+        void shouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation() {
+            // Given
+            when(roleRepository.findByRoleName(any())).thenReturn(Optional.empty());
+            doNothing().when(userUniquenessValidator).validate(any());
+            doNothing().when(passwordMatchValidator).validate(any(), any());
 
-        when(roleRepository.findByRoleName(any())).thenReturn(Optional.empty());
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser(validRequestDTO))
+                    .isInstanceOf(ResourceNotFoundException.class);
 
-        doNothing().when(userUniquenessValidator).validate(any());
-        doNothing().when(passwordMatchValidator).validate(any(), any());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            userService.createUser(validRequestDTO);
-        });
-
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
-        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+            verify(passwordEncoder, never()).encode(anyString());
+            verify(userRepository, never()).save(any(User.class));
+            verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+        }
     }
 
     // ACCOUNT VERIFICATION/CONFIRMATION
+    @Nested
+    @DisplayName("2. Account Verification Tests")
+    class AccountVerificationTests {
 
-    @Test
-    @DisplayName("2.1- ShouldVerifyUserSuccessfully_WhenTokenIsValidAndNotExpired")
-    void shouldVerifyUserSucessfully_WhenTokenIsValidAndNotExpired() {
+        @Test
+        @DisplayName("2.1 - shouldVerifyUserSuccessfully_WhenTokenIsValidAndNotExpired")
+        void shouldVerifyUserSuccessfully_WhenTokenIsValidAndNotExpired() {
+            // Given
+            User unverifiedUser = TestDataFactory.createUnverifiedUser();
+            when(userRepository.findByVerificationToken(anyString())).thenReturn(Optional.of(unverifiedUser));
+            doNothing().when(userTokenValidator).validateVerificationToken(any(User.class));
 
+            // When
+            userService.verifyUser("valid-token");
 
-        User unverifiedUser = TestDataFactory.createUnverifiedUser();
-        String validToken = unverifiedUser.getVerificationToken();
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            User savedUser = userCaptor.getValue();
 
-        when(userRepository.findByVerificationToken(validToken)).thenReturn(Optional.of(unverifiedUser));
-        doNothing().when(userTokenValidator).validateVerificationToken(any(User.class));
+            assertThat(savedUser.isEnabled()).isTrue();
+            assertThat(savedUser.getVerificationToken()).isNull();
+            assertThat(savedUser.getVerificationTokenExpiry()).isNull();
+        }
 
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        @Test
+        @DisplayName("2.2 - shouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent")
+        void shouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent() {
+            // Given
+            when(userRepository.findByVerificationToken(anyString())).thenReturn(Optional.empty());
 
-        userService.verifyUser(validToken);
+            // When & Then
+            assertThatThrownBy(() -> userService.verifyUser("invalid-token"))
+                    .isInstanceOf(ResourceNotFoundException.class);
 
-        verify(userRepository, times(1)).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
+            verify(userRepository, never()).save(any());
+        }
 
-        assertTrue(savedUser.isEnabled(), "User must be enabled");
-        assertNull(savedUser.getVerificationToken(), "The verification token must be null");
-        assertNull(savedUser.getVerificationTokenExpiry(), "The date and time must be null");
+        @Test
+        @DisplayName("2.3 - shouldThrowException_WhenVerificationTokenIsExpired")
+        void shouldThrowException_WhenVerificationTokenIsExpired() {
+            // Given
+            User userWithExpiredToken = TestDataFactory.createUnverifiedUser();
+            when(userRepository.findByVerificationToken(anyString())).thenReturn(Optional.of(userWithExpiredToken));
+            doThrow(new ResourceNotFoundException("Token expired")).when(userTokenValidator).validateVerificationToken(any(User.class));
 
+            // When & Then
+            assertThatThrownBy(() -> userService.verifyUser("expired-token"))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            verify(userRepository, never()).save(any());
+        }
     }
 
-    @Test
-    @DisplayName("2.2 ShouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent")
-    void shouldThrowException_WhenVerificationTokenIsInvalidOrNonExistent() {
-        String invalidToken = "non-existent-token-123";
+    // USER PROFILE UPDATE
+    @Nested
+    @DisplayName("3. User Profile Update Tests")
+    class UserProfileUpdateTests {
+        private User existingUser;
 
-        when(userRepository.findByVerificationToken(invalidToken)).thenReturn(Optional.empty());
+        @BeforeEach
+        void setUp() {
+            existingUser = TestDataFactory.createValidUser();
+        }
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            userService.verifyUser(invalidToken);
-        });
+        @Test
+        @DisplayName("3.1 - shouldUpdateUsernameAndEmail_WhenDataIsValid")
+        void shouldUpdateUsernameAndEmail_WhenDataIsValid() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO("newUsername", "new@email.com", null, null);
+            when(userRepository.existsByUsername("newUsername")).thenReturn(false);
+            when(userRepository.existsByEmail("new@email.com")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
+                    .thenReturn(new UserResponseDTO(existingUser.getId(), updateDTO.getUsername(), updateDTO.getEmail()));
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
-        verify(userRepository, never()).save(any(User.class));
+            // When
+            userService.updateUser(updateDTO, existingUser);
 
+            // Then
+            verify(userRepository).save(userCaptor.capture());
+            User updatedUser = userCaptor.getValue();
+            assertThat(updatedUser.getUsername()).isEqualTo("newUsername");
+            assertThat(updatedUser.getEmail()).isEqualTo("new@email.com");
+        }
+
+        @Test
+        @DisplayName("3.2 - shouldUpdatePassword_WhenNewPasswordAndConfirmationAreValid")
+        void shouldUpdatePassword_WhenNewPasswordAndConfirmationAreValid() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "newPassword123", "newPassword123");
+            doNothing().when(passwordMatchValidator).validate("newPassword123", "newPassword123");
+            doNothing().when(newPasswordValidator).validate("newPassword123", existingUser.getPassword());
+            when(passwordEncoder.encode("newPassword123")).thenReturn("encodedNewPassword");
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+
+            // When
+            userService.updateUser(updateDTO, existingUser);
+
+            // Then
+            verify(userRepository).save(userCaptor.capture());
+            User updatedUser = userCaptor.getValue();
+            assertThat(updatedUser.getPassword()).isEqualTo("encodedNewPassword");
+        }
+
+        @Test
+        @DisplayName("3.3 - shouldThrowException_WhenUpdatingToAnExistingUsername")
+        void shouldThrowException_WhenUpdatingToAnExistingUsername() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO("existingUsername", null, null, null);
+            when(userRepository.existsByUsername("existingUsername")).thenReturn(true);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
+                    .isInstanceOf(UsernameAlreadyExistsException.class);
+
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("3.4 - shouldThrowException_WhenUpdatingPasswordButConfirmationDoesNotMatch")
+        void shouldThrowException_WhenUpdatingPasswordButConfirmationDoesNotMatch() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "newPassword123", "wrongConfirmation");
+            doThrow(new PasswordMismatchException("Passwords do not match"))
+                    .when(passwordMatchValidator)
+                    .validate("newPassword123", "wrongConfirmation");
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
+                    .isInstanceOf(PasswordMismatchException.class);
+
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("3.5 - shouldThrowException_WhenNewPasswordIsSameAsCurrentPassword")
+        void shouldThrowException_WhenNewPasswordIsSameAsCurrentPassword() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "currentPassword", "currentPassword");
+            doNothing().when(passwordMatchValidator).validate("currentPassword", "currentPassword");
+            doThrow(new SameAsCurrentPasswordException("New password cannot be the same as the current one."))
+                    .when(newPasswordValidator)
+                    .validate("currentPassword", existingUser.getPassword());
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
+                    .isInstanceOf(SameAsCurrentPasswordException.class);
+
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("3.6 - shouldThrowException_WhenUpdatingToAnExistingEmail")
+        void shouldThrowException_WhenUpdatingToAnExistingEmail() {
+            // Given
+            UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, "existing@email.com", null, null);
+            when(userRepository.existsByEmail("existing@email.com")).thenReturn(true);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
+                    .isInstanceOf(EmailAlreadyExistsException.class);
+
+            verify(userRepository, never()).save(any(User.class));
+        }
     }
 
-    @Test
-    @DisplayName("2.3 - ShouldThrowException_WhenVerificationTokenIsExpired")
-    void shouldThrowException_WhenVerificationTokenIsExpired() {
+    // PASSWORD RESET
+    @Nested
+    @DisplayName("4. Password Reset Tests")
+    class PasswordResetTests {
 
-        User userWithExpiredToken = TestDataFactory.createUnverifiedUser();
-        userWithExpiredToken.setVerificationTokenExpiry(LocalDateTime.now().minusHours(1));
-        String expiredToken = userWithExpiredToken.getVerificationToken();
+        @Test
+        @DisplayName("4.1 - shouldResetPasswordSuccessfully_WhenTokenIsValid")
+        void shouldResetPasswordSuccessfully_WhenTokenIsValid() {
+            // Given
+            User user = TestDataFactory.createValidUser();
+            user.setResetPasswordToken("valid-token");
+            user.setResetPasswordTokenExpiry(LocalDateTime.now().plusHours(1));
+            String newPassword = "newSecurePassword123";
 
-        when(userRepository.findByVerificationToken(expiredToken)).thenReturn(Optional.of(userWithExpiredToken));
+            when(userRepository.findByResetPasswordToken("valid-token")).thenReturn(Optional.of(user));
+            doNothing().when(userTokenValidator).validatePasswordResetToken(user);
+            doNothing().when(passwordMatchValidator).validate(newPassword, newPassword);
+            doNothing().when(newPasswordValidator).validate(newPassword, user.getPassword());
+            when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
 
-        doThrow(new ResourceNotFoundException("The verification token has expired."))
-                .when(userTokenValidator)
-                .validateVerificationToken(any(User.class));
+            // When
+            userService.resetPassword("valid-token", newPassword, newPassword);
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            userService.verifyUser(expiredToken);
-        });
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            User savedUser = userCaptor.getValue();
 
-        verify(userRepository, never()).save(any(User.class));
+            assertThat(savedUser.getPassword()).isEqualTo("encodedNewPassword");
+            assertThat(savedUser.getResetPasswordToken()).isNull();
+            assertThat(savedUser.getResetPasswordTokenExpiry()).isNull();
+        }
 
+        @Test
+        @DisplayName("4.2 - shouldThrowException_WhenResetTokenIsInvalidOrExpired")
+        void shouldThrowException_WhenResetTokenIsInvalidOrExpired() {
+            // Given
+            String invalidToken = "invalid-token";
+            when(userRepository.findByResetPasswordToken(invalidToken)).thenReturn(Optional.empty());
 
-
+            // When & Then
+            assertThatThrownBy(() -> userService.resetPassword(invalidToken, "any", "any"))
+                    .isInstanceOf(ResourceNotFoundException.class);
+        }
     }
 
+    // USER DELETION
+    @Nested
+    @DisplayName("5. User Deletion Tests")
+    class UserDeletionTests {
+
+        @Test
+        @DisplayName("5.1 - shouldDeleteUserSuccessfully_WhenRequestedByAuthenticatedUser")
+        void shouldDeleteUserSuccessfully_WhenRequestedByAuthenticatedUser() {
+            // Given
+            User userToDelete = TestDataFactory.createValidUser();
+
+            // When
+            userService.deleteUser(userToDelete);
+
+            // Then
+            verify(userRepository, times(1)).delete(userToDelete);
+        }
+    }
 }
