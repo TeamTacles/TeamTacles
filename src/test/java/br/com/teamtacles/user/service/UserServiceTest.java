@@ -1,5 +1,8 @@
 package br.com.teamtacles.user.service;
 
+import br.com.teamtacles.common.exception.EmailAlreadyExistsException;
+import br.com.teamtacles.common.exception.PasswordMismatchException;
+import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.exception.UsernameAlreadyExistsException;
 import br.com.teamtacles.common.service.EmailService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
@@ -22,11 +25,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+
 
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +70,9 @@ public class UserServiceTest {
         validRequestDTO = TestDataFactory.createValidUserRequestRegisterDTO();
         defaultRole = TestDataFactory.createDefaultUserRole();
     }
+
+
+    // 1. USER CREATION
 
     @Test
     @DisplayName("1.1- shouldCreateUserSuccessfully_WhenDataIsValid")
@@ -103,7 +112,6 @@ public class UserServiceTest {
                 eq(savedUser.getVerificationToken())
         );
 
-
     }
 
     @Test
@@ -121,7 +129,56 @@ public class UserServiceTest {
 
     }
 
-    //continua...
+    @Test
+    @DisplayName("1.3 - shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail")
+    void shouldThrowException_WhenAttemptingToCreateUserWithExistingEmail() {
+
+        doThrow(new EmailAlreadyExistsException("Email 'test@gmail.com' already exists")).when(userUniquenessValidator).validate(any(UserRequestRegisterDTO.class));
+
+        assertThrows(EmailAlreadyExistsException.class, () -> {
+            userService.createUser(validRequestDTO);
+        });
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("1.4- ShouldThrowException_WhenPasswordsDoNotMatchOnRegistration")
+    void shouldThrowException_WhenPasswordsDoNotMatchOnRegistration() {
+        doThrow(new PasswordMismatchException("Password and confirmation dont match"))
+                .when(passwordMatchValidator)
+                .validate(validRequestDTO.getPassword(), validRequestDTO.getPasswordConfirm());
+
+        assertThrows(PasswordMismatchException.class, () -> {
+            userService.createUser(validRequestDTO);
+        });
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+
+
+    }
+
+    @Test
+    @DisplayName("1.5 - ShouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation")
+    void shouldThrowException_WhenDefaultUserRoleIsNotFoundOnCreation() {
+
+        when(roleRepository.findByRoleName(any())).thenReturn(Optional.empty());
+
+        doNothing().when(userUniquenessValidator).validate(any());
+        doNothing().when(passwordMatchValidator).validate(any(), any());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            userService.createUser(validRequestDTO);
+        });
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any(User.class));
+        verify(emailService, never()).sendVerificationEmail(anyString(), anyString());
+    }
+
+    // USER VERIFICATION
 
 
 

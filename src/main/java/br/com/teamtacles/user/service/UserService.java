@@ -60,12 +60,14 @@ public class UserService {
         userUniquenessValidator.validate(registerDTO);
         passwordMatchValidator.validate(registerDTO.getPassword(), registerDTO.getPasswordConfirm());
 
+        Role userRole = roleRepository.findByRoleName(ERole.USER)
+                .orElseThrow(() -> new ResourceNotFoundException("Error: Role USER not found."));
+
         User user = new User();
         user.setUsername(registerDTO.getUsername());
         user.setEmail(registerDTO.getEmail());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
-        Role userRole = roleRepository.findByRoleName(ERole.USER)
-                .orElseThrow(() -> new ResourceNotFoundException("Error: Role USER not found."));
+
         user.setRoles(Set.of(userRole));
 
         String token = UUID.randomUUID().toString();
