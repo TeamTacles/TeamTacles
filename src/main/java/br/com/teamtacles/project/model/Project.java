@@ -1,5 +1,6 @@
 package br.com.teamtacles.project.model;
 
+import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
@@ -15,7 +16,7 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"owner", "members"})
+@ToString(exclude = {"owner", "members", "tasks"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="project")
@@ -41,6 +42,9 @@ public class Project {
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> members = new HashSet<>();
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Task> tasks = new HashSet<>();
 
     private String invitationToken;
 

@@ -277,6 +277,9 @@ public class ProjectService {
         project.removeMember(membershipToDelete);
         projectRepository.save(project);
     }
+    public Project findProjectEntityById(Long teamId) {
+        return findProjectByIdOrThrow(teamId);
+    }
 
     private Project findProjectByIdOrThrow(Long projectId) {
         return projectRepository.findById(projectId)

@@ -1,6 +1,7 @@
 package br.com.teamtacles.user.model;
 
 import br.com.teamtacles.project.model.ProjectMember;
+import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.team.model.TeamMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"password", "roles", "teamMemberships", "projectMemberships"})
+@ToString(exclude = {"password", "roles", "teamMemberships", "projectMemberships", "taskAssignments"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name="users")
@@ -55,6 +56,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> projectMemberships = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TaskAssignment> taskAssignments = new HashSet<>();
 
     private String verificationToken;
 

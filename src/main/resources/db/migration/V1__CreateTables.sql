@@ -67,3 +67,29 @@ CREATE TABLE IF NOT EXISTS project_members (
     CONSTRAINT fk_pm_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT uq_project_user UNIQUE (project_id, user_id)
 );
+
+CREATE TABLE tasks (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    due_date TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    completion_comment VARCHAR(300),
+    project_id BIGINT NOT NULL,
+    owner_id BIGINT NOT NULL,
+    CONSTRAINT fk_task_project FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_task_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+);
+
+CREATE TABLE task_assignments (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    role VARCHAR(30) NOT NULL, -- COLUNA ADICIONADA
+    assigned_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT fk_assignment_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    CONSTRAINT fk_assignment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_task_user_assignment UNIQUE (task_id, user_id)
+);
