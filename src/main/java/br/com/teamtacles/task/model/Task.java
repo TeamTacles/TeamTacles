@@ -61,4 +61,22 @@ public class Task {
             this.status = ETaskStatus.TO_DO;
         }
     }
+
+    public void addAssigment(TaskAssignment assignment) {
+        this.assignments.add(assignment);
+        assignment.setTask(this);
+    }
+
+    public void removeAssigment(TaskAssignment assignment) {
+        this.assignments.remove(assignment);
+        assignment.setTask(null);
+    }
+
+    public boolean isOverdue() {
+        return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
+    }
+
+    public boolean isCompleted() {
+        return this.status == ETaskStatus.DONE;
+    }
 }

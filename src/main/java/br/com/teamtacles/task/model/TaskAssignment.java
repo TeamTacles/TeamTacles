@@ -1,8 +1,10 @@
 package br.com.teamtacles.task.model;
 
 import br.com.teamtacles.task.enumeration.ETaskRole;
+import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
