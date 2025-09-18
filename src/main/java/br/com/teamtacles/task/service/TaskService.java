@@ -8,6 +8,7 @@ import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
 import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
+import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
@@ -117,4 +118,27 @@ public class TaskService {
         return taskAssignmentRepository.findByTaskAndUser(task, userToRemove)
                 .orElseThrow((() -> new ResourceNotFoundException("User to remove is not assigned to this task.")));
     }
+
+
+    @Transactional
+    public TaskResponseDTO updateTaskDetails(Long projectId, Long taskId, TaskRequestUpdateDTO taskUpdateDTO, User actingUser) {
+        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+
+        taskAuthorizationService.checkEditPermission(actingUser, task);
+
+        if (taskUpdateDTO.getTitle() != null) {
+            task.setTitle(taskUpdateDTO.getTitle());
+        }
+        if (taskUpdateDTO.getDescription() != null) {
+            task.setDescription(taskUpdateDTO.getDescription());
+        }
+        if (taskUpdateDTO.getDueDate() != null) {
+            task.setDueDate(taskUpdateDTO.getDueDate());
+        }
+
+        Task updatedTask = taskRepository.save(task);
+        return modelMapper.map(updatedTask, TaskResponseDTO.class);
+
+    }
+
 }

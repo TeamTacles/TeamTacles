@@ -4,6 +4,7 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
 import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
+import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
 import jakarta.validation.Valid;
@@ -13,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 
 import java.util.List;
 
@@ -68,5 +71,15 @@ public class TaskController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         taskService.removeUserFromTask(projectId, taskId, userId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{taskId}")
+    public ResponseEntity<TaskResponseDTO> updateTaskDetails(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody @Valid TaskRequestUpdateDTO taskUpdateDTO,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        TaskResponseDTO updatedTask = taskService.updateTaskDetails(projectId, taskId, taskUpdateDTO, authenticatedUser.getUser());
+        return ResponseEntity.ok(updatedTask);
     }
 }
