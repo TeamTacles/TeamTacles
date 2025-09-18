@@ -1,6 +1,7 @@
 package br.com.teamtacles.task.dto.request;
 
 
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -15,5 +16,6 @@ public class TaskRequestUpdateDTO {
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     String description;
 
+    @Future(message = "The due date must be in the future ")
     private OffsetDateTime dueDate;
 }
