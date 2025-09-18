@@ -18,7 +18,7 @@ public class TaskProjectAssociationValidator {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
-        if(task.getProject().getId().equals(projectId)) {
+        if(!task.getProject().getId().equals(projectId)) {
             throw new ResourceNotFoundException("Task not found with id: " + taskId);
         }
 
