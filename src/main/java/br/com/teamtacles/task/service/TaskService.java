@@ -92,7 +92,7 @@ public class TaskService {
 
     @Transactional
     public TaskResponseDTO updateTaskStatus(Long projectId, Long taskId, UpdateTaskStatusRequestDTO updateStatusDTO, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
         taskAuthorizationService.checkChangeStatusPermission(actingUser, task);
 
         taskStateTransitionValidator.validate(task.getStatus(), updateStatusDTO.getNewStatus());
@@ -120,7 +120,7 @@ public class TaskService {
 
     @Transactional
     public TaskResponseDTO assignUsersToTask(Long projectId, Long taskId, Set<TaskAssignmentRequestDTO> assignmentsDTO, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
         taskAuthorizationService.checkEditPermission(actingUser, task);
 
         taskAssignmentRoleValidator.validate(assignmentsDTO);
@@ -156,7 +156,7 @@ public class TaskService {
 
     @Transactional
     public void removeUsersFromTask(Long projectId, Long taskId, Set<Long> userIdsToRemove, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
         taskAuthorizationService.checkEditPermission(actingUser, task);
 
         if (userIdsToRemove.contains(task.getOwner().getId())) {
@@ -168,14 +168,14 @@ public class TaskService {
 
     @Transactional
     public void deleteTaskById(Long projectId, Long taskId, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
         taskAuthorizationService.checkEditPermission(actingUser, task);
         taskRepository.delete(task);
     }
 
     @Transactional
     public TaskResponseDTO updateTaskDetails(Long projectId, Long taskId, TaskRequestUpdateDTO taskUpdateDTO, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
 
         taskAuthorizationService.checkEditPermission(actingUser, task);
 
@@ -201,7 +201,7 @@ public class TaskService {
 
     @Transactional
     public TaskResponseDTO getTaskById(Long projectId, Long taskId, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
 
         taskAuthorizationService.checkViewPermission(actingUser, task);
 

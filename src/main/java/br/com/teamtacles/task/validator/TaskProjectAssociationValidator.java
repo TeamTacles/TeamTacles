@@ -14,7 +14,7 @@ public class TaskProjectAssociationValidator {
         this.taskRepository = taskRepository;
     }
 
-    public Task findAndValidte(Long taskId, Long projectId) {
+    public Task findAndValidate(Long taskId, Long projectId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
