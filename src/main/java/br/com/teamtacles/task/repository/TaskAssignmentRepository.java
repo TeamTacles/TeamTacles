@@ -17,6 +17,9 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     @Modifying
     @Query("DELETE FROM TaskAssignment ta WHERE ta.task.id = :taskId AND ta.user.id IN :userIds")
     void deleteAllByTaskIdAndUserIds(Long taskId, Set<Long> userIds);
+
+
+    List<TaskAssignment> findAllByTaskId(Long taskId);
 }
 
 

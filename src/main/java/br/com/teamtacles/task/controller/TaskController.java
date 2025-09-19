@@ -4,6 +4,7 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
+import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import br.com.teamtacles.task.dto.request.TaskAssignmentsBulkDeleteRequestDTO;
 
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -97,5 +99,14 @@ public class TaskController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         taskService.removeUsersFromTask(projectId, taskId, deleteRequest.getUserIds(), authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{taskId}/members")
+    public ResponseEntity<List<UserAssignmentResponseDTO>> getTaskMembers(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        List<UserAssignmentResponseDTO> members = taskService.getTaskMembers(projectId, taskId, authenticatedUser.getUser());
+        return ResponseEntity.ok(members);
     }
 }

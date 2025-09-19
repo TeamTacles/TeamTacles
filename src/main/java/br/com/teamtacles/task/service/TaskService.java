@@ -11,6 +11,7 @@ import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
 import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
 import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
+import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
@@ -64,7 +65,7 @@ public class TaskService {
         this.taskAssignmentRepository = taskAssignmentRepository;
         this.taskProjectAssociationValidator = taskProjectAssociationValidator;
         this.taskStateTransitionValidator = taskStateTransitionValidator;
-        this.taskAssignmentRoleValidator =taskAssignmentRoleValidator;
+        this.taskAssignmentRoleValidator = taskAssignmentRoleValidator;
         this.projectService = projectService;
         this.userService = userService;
         this.projectAuthorizationService = projectAuthorizationService;
@@ -129,7 +130,7 @@ public class TaskService {
 
         Set<User> validMembers = projectService.findProjectMembersFromIdList(projectId, userIdsToAssign);
 
-        if(userIdsToAssign.size() != validMembers.size()) {
+        if (userIdsToAssign.size() != validMembers.size()) {
             throw new AccessDeniedException("One or more users are not valid members of this project.");
         }
 
@@ -137,12 +138,12 @@ public class TaskService {
                 .map(TaskAssignment::getUser)
                 .collect(Collectors.toSet());
 
-        for(TaskAssignmentRequestDTO assignmentDTO : assignmentsDTO) {
+        for (TaskAssignmentRequestDTO assignmentDTO : assignmentsDTO) {
             User userToAssign = validMembers.stream()
                     .filter(a -> a.getId().equals(assignmentDTO.getUserId()))
                     .findFirst().orElseThrow();
 
-            if(!alreadyAssignedUsers.contains(userToAssign)) {
+            if (!alreadyAssignedUsers.contains(userToAssign)) {
                 TaskAssignment newAssignment = new TaskAssignment(task, userToAssign, assignmentDTO.getRole());
                 task.addAssigment(newAssignment);
             }
@@ -193,7 +194,7 @@ public class TaskService {
 
     }
 
-    private TaskAssignment findByTaskAndUserOrThrow(Task task, User userToRemove ) {
+    private TaskAssignment findByTaskAndUserOrThrow(Task task, User userToRemove) {
         return taskAssignmentRepository.findByTaskAndUser(task, userToRemove)
                 .orElseThrow((() -> new ResourceNotFoundException("User to remove is not assigned to this task.")));
     }
@@ -213,5 +214,23 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException(errorMessage));
     }
 
+    @Transactional(readOnly = true)
+    public List<UserAssignmentResponseDTO> getTaskMembers(Long projectId, Long taskId, User actingUser) {
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
+        taskAuthorizationService.checkViewPermission(actingUser, task);
 
+        List<TaskAssignment> assignments = taskAssignmentRepository.findAllByTaskId(taskId);
+
+        return assignments.stream()
+                .map(this::toUserAssignmentResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    private UserAssignmentResponseDTO toUserAssignmentResponseDTO(TaskAssignment assignment) {
+        UserAssignmentResponseDTO dto = new UserAssignmentResponseDTO();
+        dto.setUserId(assignment.getUser().getId());
+        dto.setUsername(assignment.getUser().getUsername());
+        dto.setTaskRole(assignment.getTaskRole());
+        return dto;
+    }
 }

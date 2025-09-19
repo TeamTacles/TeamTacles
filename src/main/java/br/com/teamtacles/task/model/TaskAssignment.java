@@ -1,10 +1,8 @@
 package br.com.teamtacles.task.model;
 
 import br.com.teamtacles.task.enumeration.ETaskRole;
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -33,16 +31,16 @@ public class TaskAssignment {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ETaskRole role;
+    @Column(name = "task_role", nullable = false)
+    private ETaskRole taskRole;
 
     @Column(nullable = false, updatable = false)
     private OffsetDateTime assignedAt;
 
-    public TaskAssignment(Task task, User user, ETaskRole role) {
+    public TaskAssignment(Task task, User user, ETaskRole taskRole) {
         this.task = task;
         this.user = user;
-        this.role = role;
+        this.taskRole = taskRole;
     }
 
     @PrePersist
