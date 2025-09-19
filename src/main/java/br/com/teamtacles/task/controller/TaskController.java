@@ -5,7 +5,6 @@ import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
-import br.com.teamtacles.user.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -13,14 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import br.com.teamtacles.task.dto.request.TaskAssignmentsBulkDeleteRequestDTO;
 
-
-
-
-
-import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/project/{projectId}/tasks")
@@ -42,7 +36,7 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> assignUsers(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @RequestBody @Valid List<TaskAssignmentRequestDTO> assignmentsDTO,
+            @RequestBody @Valid Set<TaskAssignmentRequestDTO> assignmentsDTO,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         TaskResponseDTO updatedTask = taskService.assignUsersToTask(projectId, taskId, assignmentsDTO, authenticatedUser.getUser());
         return ResponseEntity.ok(updatedTask);
@@ -57,7 +51,7 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    @PatchMapping("/{taskId]/status")
+    @PatchMapping("/{taskId}/status")
     public ResponseEntity<TaskResponseDTO> updateTaskstatus (
             @PathVariable Long projectId,
             @PathVariable Long taskId,

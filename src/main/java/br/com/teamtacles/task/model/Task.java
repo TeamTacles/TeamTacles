@@ -76,7 +76,7 @@ public class Task {
         return this.status == ETaskStatus.TO_DO;
     }
 
-    public boolean isInProgresss() {
+    public boolean isInProgress() {
         return this.status == ETaskStatus.IN_PROGRESS;
     }
 

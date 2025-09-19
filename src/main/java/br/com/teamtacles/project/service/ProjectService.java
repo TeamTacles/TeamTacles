@@ -30,9 +30,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ProjectService {
@@ -280,6 +278,13 @@ public class ProjectService {
     }
     public Project findProjectEntityById(Long teamId) {
         return findProjectByIdOrThrow(teamId);
+    }
+
+    public Set<User> findProjectMembersFromIdList(Long projectId, List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        return projectMemberRepository.findProjectMembersAsUsers(projectId, userIds);
     }
 
     private Project findProjectByIdOrThrow(Long projectId) {

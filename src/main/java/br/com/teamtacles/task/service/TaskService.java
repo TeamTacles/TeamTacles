@@ -17,19 +17,22 @@ import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.task.repository.TaskAssignmentRepository;
 import br.com.teamtacles.task.repository.TaskRepository;
+import br.com.teamtacles.task.validator.TaskAssignmentRoleValidator;
 import br.com.teamtacles.task.validator.TaskProjectAssociationValidator;
 import br.com.teamtacles.task.validator.TaskStateTransitionValidator;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
@@ -38,6 +41,7 @@ public class TaskService {
     private final TaskAssignmentRepository taskAssignmentRepository;
     private final TaskProjectAssociationValidator taskProjectAssociationValidator;
     private final TaskStateTransitionValidator taskStateTransitionValidator;
+    private final TaskAssignmentRoleValidator taskAssignmentRoleValidator;
     private final ProjectService projectService;
     private final UserService userService;
     private final ProjectAuthorizationService projectAuthorizationService;
@@ -49,6 +53,7 @@ public class TaskService {
                        TaskAssignmentRepository taskAssignmentRepository,
                        TaskProjectAssociationValidator taskProjectAssociationValidator,
                        TaskStateTransitionValidator taskStateTransitionValidator,
+                       TaskAssignmentRoleValidator taskAssignmentRoleValidator,
                        ProjectService projectService,
                        UserService userService,
                        ProjectAuthorizationService projectAuthorizationService,
@@ -59,6 +64,7 @@ public class TaskService {
         this.taskAssignmentRepository = taskAssignmentRepository;
         this.taskProjectAssociationValidator = taskProjectAssociationValidator;
         this.taskStateTransitionValidator = taskStateTransitionValidator;
+        this.taskAssignmentRoleValidator =taskAssignmentRoleValidator;
         this.projectService = projectService;
         this.userService = userService;
         this.projectAuthorizationService = projectAuthorizationService;
@@ -112,28 +118,43 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponseDTO assignUsersToTask(Long projectId, Long taskId, List<TaskAssignmentRequestDTO> assignmentsDTO, User actingUser) {
+    public TaskResponseDTO assignUsersToTask(Long projectId, Long taskId, Set<TaskAssignmentRequestDTO> assignmentsDTO, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
         taskAuthorizationService.checkEditPermission(actingUser, task);
 
-        for (TaskAssignmentRequestDTO assignmentDTO : assignmentsDTO) {
-            User userToAssign = userService.findUserEntityById(assignmentDTO.getUserId());
-            projectAuthorizationService.checkProjectMembership(userToAssign, task.getProject());
+        taskAssignmentRoleValidator.validate(assignmentsDTO);
 
-            boolean alreadyAssigned = task.getAssignments().stream().anyMatch(a -> a.getUser().equals(userToAssign));
+        List<Long> userIdsToAssign = assignmentsDTO.stream()
+                .map(TaskAssignmentRequestDTO::getUserId).toList();
 
-            if(!alreadyAssigned) {
+        Set<User> validMembers = projectService.findProjectMembersFromIdList(projectId, userIdsToAssign);
+
+        if(userIdsToAssign.size() != validMembers.size()) {
+            throw new AccessDeniedException("One or more users are not valid members of this project.");
+        }
+
+        Set<User> alreadyAssignedUsers = task.getAssignments().stream()
+                .map(TaskAssignment::getUser)
+                .collect(Collectors.toSet());
+
+        for(TaskAssignmentRequestDTO assignmentDTO : assignmentsDTO) {
+            User userToAssign = validMembers.stream()
+                    .filter(a -> a.getId().equals(assignmentDTO.getUserId()))
+                    .findFirst().orElseThrow();
+
+            if(!alreadyAssignedUsers.contains(userToAssign)) {
                 TaskAssignment newAssignment = new TaskAssignment(task, userToAssign, assignmentDTO.getRole());
                 task.addAssigment(newAssignment);
             }
         }
+
 
         Task updatedTask = taskRepository.save(task);
         return modelMapper.map(updatedTask, TaskResponseDTO.class);
     }
 
     @Transactional
-    public void removeUsersFromTask(Long projectId, Long taskId, List<Long> userIdsToRemove, User actingUser) {
+    public void removeUsersFromTask(Long projectId, Long taskId, Set<Long> userIdsToRemove, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidte(taskId, projectId);
         taskAuthorizationService.checkEditPermission(actingUser, task);
 
