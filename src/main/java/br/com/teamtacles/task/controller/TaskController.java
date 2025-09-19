@@ -2,11 +2,10 @@ package br.com.teamtacles.task.controller;
 
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.security.UserAuthenticated;
-import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
-import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
-import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
+import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
+import br.com.teamtacles.user.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import br.com.teamtacles.task.dto.request.TaskAssignmentsBulkDeleteRequestDTO;
+
+
+
 
 
 import java.util.List;
@@ -54,23 +57,14 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> deleteTaskById(
+    @PatchMapping("/{taskId]/status")
+    public ResponseEntity<TaskResponseDTO> updateTaskstatus (
             @PathVariable Long projectId,
             @PathVariable Long taskId,
+            @RequestBody @Valid UpdateTaskStatusRequestDTO updateStatusDTO,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        taskService.deleteTaskById(projectId, taskId, authenticatedUser.getUser());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{taskId}/assignments/{userId}")
-    public ResponseEntity<Void> removeUserFromTask(
-            @PathVariable Long projectId,
-            @PathVariable Long taskId,
-            @PathVariable Long userId,
-            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        taskService.removeUserFromTask(projectId, taskId, userId, authenticatedUser.getUser());
-        return ResponseEntity.noContent().build();
+        TaskResponseDTO taskUpdate = taskService.updateTaskStatus(projectId, taskId, updateStatusDTO, authenticatedUser.getUser());
+        return ResponseEntity.ok(taskUpdate);
     }
 
     @PatchMapping("/{taskId}")
@@ -81,5 +75,33 @@ public class TaskController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         TaskResponseDTO updatedTask = taskService.updateTaskDetails(projectId, taskId, taskUpdateDTO, authenticatedUser.getUser());
         return ResponseEntity.ok(updatedTask);
+    }
+
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<Void> deleteTaskById(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        taskService.deleteTaskById(projectId, taskId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{taskId}")
+    public ResponseEntity<TaskResponseDTO> getTaskById(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        TaskResponseDTO taskResponse = taskService.getTaskById(projectId, taskId, authenticatedUser.getUser());
+        return ResponseEntity.ok(taskResponse);
+    }
+
+    @DeleteMapping("/{taskId}/assignments")
+    public ResponseEntity<Void> removeUsersFromTask(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody @Valid TaskAssignmentsBulkDeleteRequestDTO deleteRequest,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        taskService.removeUsersFromTask(projectId, taskId, deleteRequest.getUserIds(), authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
     }
 }

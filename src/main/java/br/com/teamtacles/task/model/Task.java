@@ -72,11 +72,19 @@ public class Task {
         assignment.setTask(null);
     }
 
-    public boolean isOverdue() {
-        return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
+    public boolean isToDo() {
+        return this.status == ETaskStatus.TO_DO;
+    }
+
+    public boolean isInProgresss() {
+        return this.status == ETaskStatus.IN_PROGRESS;
     }
 
     public boolean isCompleted() {
         return this.status == ETaskStatus.DONE;
+    }
+
+    public boolean isOverdue() {
+        return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
     }
 }
