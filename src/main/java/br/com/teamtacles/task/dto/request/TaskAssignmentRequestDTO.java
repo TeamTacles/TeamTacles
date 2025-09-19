@@ -13,5 +13,5 @@ public class TaskAssignmentRequestDTO {
     private Long userId;
 
     @NotNull(message = "Task role cannot be null.")
-    private ETaskRole role;
+    private ETaskRole taskRole;
 }

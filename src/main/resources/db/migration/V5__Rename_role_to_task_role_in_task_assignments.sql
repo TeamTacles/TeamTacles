@@ -1,0 +1,1 @@
+ALTER TABLE task_assignments RENAME COLUMN role TO task_role;

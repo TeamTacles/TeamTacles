@@ -10,7 +10,7 @@ import java.util.Set;
 public class TaskAssignmentRoleValidator {
     public void validate(Set<TaskAssignmentRequestDTO> assignmentsDTO) {
         boolean hasOwnerRole = assignmentsDTO.stream()
-                .anyMatch(dto -> dto.getRole() == ETaskRole.OWNER);
+                .anyMatch(dto -> dto.getTaskRole() == ETaskRole.OWNER);
 
         if (hasOwnerRole) {
             throw new IllegalArgumentException("The OWNER role cannot be assigned through this method. It is set automatically on task creation.");

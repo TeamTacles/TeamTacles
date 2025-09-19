@@ -144,7 +144,7 @@ public class TaskService {
                     .findFirst().orElseThrow();
 
             if (!alreadyAssignedUsers.contains(userToAssign)) {
-                TaskAssignment newAssignment = new TaskAssignment(task, userToAssign, assignmentDTO.getRole());
+                TaskAssignment newAssignment = new TaskAssignment(task, userToAssign, assignmentDTO.getTaskRole());
                 task.addAssigment(newAssignment);
             }
         }

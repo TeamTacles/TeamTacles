@@ -1,7 +1,9 @@
 package br.com.teamtacles.config;
 
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
+import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.task.model.TaskAssignment;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeMap;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +28,11 @@ public class ModelMapperConfiguration {
 
             mapper.map(src -> src.getProject().getId(), TaskResponseDTO::setProjectId);
         });
+
+        modelMapper.createTypeMap(TaskAssignment.class, UserAssignmentResponseDTO.class)
+                .addMapping(src -> src.getUser().getId(), UserAssignmentResponseDTO::setUserId)
+                .addMapping(src -> src.getUser().getUsername(), UserAssignmentResponseDTO::setUsername);
+
 
         return modelMapper;
     }

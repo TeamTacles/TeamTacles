@@ -43,6 +43,6 @@ public class TaskAuthorizationService {
     public boolean isAssignee(User user, Task task) {
         return task.getAssignments().stream()
                 .anyMatch(assignment -> assignment.getUser().equals(user) &&
-                        assignment.getTaskRole() == ETaskRole.ASSIGNEE); 
+                        assignment.getTaskRole() == ETaskRole.ASSIGNEE);
     }
 }
