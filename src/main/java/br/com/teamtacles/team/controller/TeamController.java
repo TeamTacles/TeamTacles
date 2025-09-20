@@ -2,9 +2,7 @@ package br.com.teamtacles.team.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.security.UserAuthenticated;
-import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
-import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
-import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
+import br.com.teamtacles.team.dto.request.*;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
@@ -18,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 
 @RestController
 @RequestMapping("/api/team")
@@ -71,9 +68,10 @@ public class TeamController {
 
     @GetMapping
     public ResponseEntity<PagedResponse<UserTeamResponseDTO>> getAllTeamsByUser(
+            @ModelAttribute TeamFilterDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser,
             Pageable pageable) {
-        PagedResponse<UserTeamResponseDTO> teams = teamService.getAllTeamsByUser(pageable, authenticatedUser.getUser());
+        PagedResponse<UserTeamResponseDTO> teams = teamService.getAllTeamsByUser(pageable, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(teams);
     }
 

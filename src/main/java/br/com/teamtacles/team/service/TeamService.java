@@ -1,10 +1,7 @@
 package br.com.teamtacles.team.service;
 
 import br.com.teamtacles.common.service.EmailService;
-import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
-import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
-import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
-import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
+import br.com.teamtacles.team.dto.request.*;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
@@ -134,10 +131,18 @@ public class TeamService {
         return modelMapper.map(team, TeamResponseDTO.class);
     }
 
-    public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, User actingUser) {
-        Page<TeamMember> userTeamsPage = teamMemberRepository.findByUserAndAcceptedInviteTrue(actingUser, pageable);
-        Page<UserTeamResponseDTO> userTeamResponseDTOPage = userTeamsPage.map(membership ->
-                toUserTeamResponseDTO(membership.getTeam(), membership));
+    public PagedResponse<UserTeamResponseDTO> getAllTeamsByUser(Pageable pageable, TeamFilterDTO filter, User actingUser) {
+        Page<Team> teamsPage = teamRepository.findTeamsByUserWithFilters(actingUser, filter, pageable);
+
+        Page<UserTeamResponseDTO> userTeamResponseDTOPage = teamsPage.map(team -> {
+            TeamMember membership = team.getMembers().stream()
+                    .filter(m -> m.getUser().getId().equals(actingUser.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Data inconsistency: Team found without corresponding member."));
+
+            return toUserTeamResponseDTO(team, membership);
+        });
+
         return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
     }
 

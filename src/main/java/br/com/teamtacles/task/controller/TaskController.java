@@ -48,8 +48,9 @@ public class TaskController {
     public ResponseEntity<PagedResponse<TaskResponseDTO>> getTasksForProject(
             @PathVariable Long projectId,
             Pageable pageable,
+            @ModelAttribute TaskFilterDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        PagedResponse<TaskResponseDTO> tasks = taskService.getTasksForProject(pageable, projectId, authenticatedUser.getUser());
+        PagedResponse<TaskResponseDTO> tasks = taskService.getTasksForProject(pageable, projectId, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(tasks);
     }
 

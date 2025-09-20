@@ -2,12 +2,10 @@ package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
-import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
-import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
-import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
-import br.com.teamtacles.project.dto.request.UpdateMemberRoleProjectRequestDTO;
+import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
+import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
@@ -89,10 +87,11 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<PagedResponse<ProjectResponseDTO>> getAllProjectsByUser(
+    public ResponseEntity<PagedResponse<UserProjectResponseDTO>> getAllProjectsByUser(
+            @ModelAttribute ProjectFilterDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser,
             Pageable pageable) {
-        PagedResponse<ProjectResponseDTO> projects = projectService.getAllProjectsByUser(pageable, authenticatedUser.getUser());
+        PagedResponse<UserProjectResponseDTO> projects = projectService.getAllProjectsByUser(pageable, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(projects);
     }
 

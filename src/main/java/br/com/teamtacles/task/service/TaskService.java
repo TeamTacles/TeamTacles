@@ -6,10 +6,7 @@ import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
-import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
-import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
-import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
-import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
+import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.enumeration.ETaskRole;
@@ -108,11 +105,11 @@ public class TaskService {
         return modelMapper.map(updateTask, TaskResponseDTO.class);
     }
 
-    public PagedResponse<TaskResponseDTO> getTasksForProject(Pageable pageable, Long projectId, User actingUser) {
+    public PagedResponse<TaskResponseDTO> getTasksForProject(Pageable pageable, Long projectId, TaskFilterDTO filter, User actingUser) {
         Project project = projectService.findProjectEntityById(projectId);
         projectAuthorizationService.checkProjectMembership(actingUser, project);
 
-        Page<Task> tasks = taskRepository.findByProject(pageable, project);
+        Page<Task> tasks = taskRepository.findTasksByProjectWithFilters(projectId, filter, pageable);
         Page<TaskResponseDTO> taskResponseDTOPage = tasks.map(task -> modelMapper.map(task, TaskResponseDTO.class));
 
         return pagedResponseMapper.toPagedResponse(taskResponseDTOPage, TaskResponseDTO.class);
@@ -148,7 +145,6 @@ public class TaskService {
                 task.addAssigment(newAssignment);
             }
         }
-
 
         Task updatedTask = taskRepository.save(task);
         return modelMapper.map(updatedTask, TaskResponseDTO.class);

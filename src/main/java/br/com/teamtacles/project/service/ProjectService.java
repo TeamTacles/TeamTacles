@@ -5,12 +5,10 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.common.service.EmailService;
-import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
-import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
-import br.com.teamtacles.project.dto.request.ProjectRequestRegisterDTO;
-import br.com.teamtacles.project.dto.request.UpdateMemberRoleProjectRequestDTO;
+import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
+import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
@@ -165,13 +163,21 @@ public class ProjectService {
         return modelMapper.map(project, ProjectResponseDTO.class);
     }
 
-    public PagedResponse<ProjectResponseDTO> getAllProjectsByUser(Pageable pageable, User actingUser) {
-        Page<ProjectMember> userProjectsPage = projectMemberRepository.findByUserAndAcceptedInviteTrue(actingUser, pageable);
-        Page<ProjectResponseDTO> projectResponseDTOPage = userProjectsPage.map(membership ->
-                modelMapper.map(membership.getProject(), ProjectResponseDTO.class)
-        );
-        return pagedResponseMapper.toPagedResponse(projectResponseDTOPage, ProjectResponseDTO.class);
+    public PagedResponse<UserProjectResponseDTO> getAllProjectsByUser(Pageable pageable, ProjectFilterDTO filter, User actingUser) {
+        Page<Project> projectsPage = projectRepository.findProjectsByUserWithFilters(actingUser, filter, pageable);
+
+        Page<UserProjectResponseDTO> userProjectDTOPage = projectsPage.map(project -> {
+            ProjectMember membership = project.getMembers().stream()
+                    .filter(member -> member.getUser().getId().equals(actingUser.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Data inconsistency: Project " + project.getId() + " found without the corresponding member."));
+
+            return toUserProjectResponseDTO(project, membership);
+        });
+
+        return pagedResponseMapper.toPagedResponse(userProjectDTOPage, UserProjectResponseDTO.class);
     }
+
 
     public PagedResponse<ProjectMemberResponseDTO> getAllMembersFromProject(Pageable pageable, Long projectId, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -312,6 +318,15 @@ public class ProjectService {
         dto.setUserId(membership.getUser().getId());
         dto.setUsername(membership.getUser().getUsername());
         dto.setEmail(membership.getUser().getEmail());
+        dto.setProjectRole(membership.getProjectRole());
+        return dto;
+    }
+
+    private UserProjectResponseDTO toUserProjectResponseDTO(Project project, ProjectMember membership) {
+        UserProjectResponseDTO dto = new UserProjectResponseDTO();
+        dto.setId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setDescription(project.getDescription());
         dto.setProjectRole(membership.getProjectRole());
         return dto;
     }
