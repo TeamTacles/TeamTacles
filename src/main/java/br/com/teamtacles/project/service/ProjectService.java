@@ -25,6 +25,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -189,6 +190,12 @@ public class ProjectService {
         return pagedResponseMapper.toPagedResponse(projectMemberResponseDTOPage, ProjectMemberResponseDTO.class);
     }
 
+    public Project getProjectWithMembersAndTasks(Long projectId, User actingUser) {
+        Project project = findProjectWithMembersAndTasksOrThrow(projectId);
+        projectAuthorizationService.checkProjectOwner(actingUser, project);
+        return project;
+    }
+
     @Transactional
     public void inviteMember(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -282,6 +289,7 @@ public class ProjectService {
         project.removeMember(membershipToDelete);
         projectRepository.save(project);
     }
+
     public Project findProjectEntityById(Long teamId) {
         return findProjectByIdOrThrow(teamId);
     }
@@ -291,6 +299,11 @@ public class ProjectService {
             return new HashSet<>();
         }
         return projectMemberRepository.findProjectMembersAsUsers(projectId, userIds);
+    }
+
+    private Project findProjectWithMembersAndTasksOrThrow(Long projectId) {
+        return projectRepository.findByIdWithMembersAndTasks(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
     }
 
     private Project findProjectByIdOrThrow(Long projectId) {

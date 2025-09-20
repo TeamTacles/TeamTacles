@@ -24,4 +24,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(p.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
             "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(p.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Project> findProjectsByUserWithFilters(@Param("user") User user, @Param("filter") ProjectFilterDTO filter, Pageable pageable);
+
+    @Query("SELECT p FROM Project p " +
+            "LEFT JOIN FETCH p.members " +
+            "LEFT JOIN FETCH p.tasks " +
+            "WHERE p.id = :projectId")
+    Optional<Project> findByIdWithMembersAndTasks(@Param("projectId") Long projectId);
 }

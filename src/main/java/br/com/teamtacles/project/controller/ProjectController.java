@@ -2,28 +2,39 @@ package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
+import br.com.teamtacles.common.util.ReportFileNameGenerator;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
+import br.com.teamtacles.project.model.Project;
+import br.com.teamtacles.project.service.PdfExportProjectService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import jakarta.validation.Valid;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/project")
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final PdfExportProjectService pdfExportProjectService;
 
-    public ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService, PdfExportProjectService pdfExportProjectService) {
         this.projectService = projectService;
+        this.pdfExportProjectService = pdfExportProjectService;
     }
 
     @PostMapping
@@ -108,6 +119,23 @@ public class ProjectController {
             Pageable pageable) {
         PagedResponse<ProjectMemberResponseDTO> usersFromProject = projectService.getAllMembersFromProject(pageable, projectId, authenticatedUser.getUser());
         return ResponseEntity.ok(usersFromProject);
+    }
+
+    @GetMapping(value = "/{projectId}/export/pdf")
+    public ResponseEntity<byte[]> exportProjectToPdf(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+
+        Project project = projectService.getProjectWithMembersAndTasks(projectId, authenticatedUser.getUser());
+        byte[] pdfReportBytes = pdfExportProjectService.export(project);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+
+        String fileName = ReportFileNameGenerator.gerenateForProject(project);
+        headers.setContentDispositionFormData("attachment", fileName);
+
+        return ResponseEntity.ok().headers(headers).body(pdfReportBytes);
     }
 
     @PatchMapping("/{projectId}")

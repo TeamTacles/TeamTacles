@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Relatório do Projeto</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap');
+
+        /* Estilos Globais */
+        body, html {
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+        .page-container {
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        /* --- Cabeçalho --- */
+        .header-table {
+            width: 100%;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .header-table .logo {
+            width: 80px; /* Logo com tamanho ajustado */
+            height: auto;
+        }
+        .header-table .project-title {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: right;
+            color: #000000;
+        }
+        .meta-info {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-align: right;
+            padding-top: 5px;
+        }
+
+        /* --- Seções e Títulos --- */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .description {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* --- Linha Divisória --- */
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 30px 0;
+        }
+
+        /* --- Resumo Geral --- */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .summary-box {
+            width: 25%;
+            padding: 15px 10px;
+        }
+        .summary-box .count {
+            display: block;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .summary-box .label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+        .summary-box .done { color: #2ecc71; }
+        .summary-box .in-progress { color: #3498db; }
+        .summary-box .todo { color: #f1c40f; }
+        .summary-box .overdue { color: #e74c3c; }
+
+        /* --- Tabelas de Dados --- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .data-table th, .data-table td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .data-table thead {
+            background-color: #f2f2f2;
+            color: #34495e;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* --- Rodapé --- */
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #aaa;
+            width: 100%;
+            padding-top: 20px;
+            margin-top: 40px;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <table class="header-table">
+        <tr>
+            <td style="width: 70px;"><img th:src="${logoUrl}" alt="Logo" class="logo"/></td>
+            <td>
+                <div class="project-title" th:text="${project.title}">Nome do Projeto</div>
+                <div class="meta-info">
+                    <strong>Criado em:</strong> <span th:text="${#temporals.format(project.createdAt, 'dd/MM/yyyy')}">Data</span> |
+                    <strong>Dono:</strong> <span th:text="${project.owner.username}">Dono</span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Descrição do Projeto</div>
+    <p class="description" th:text="${project.description}">Descrição do projeto aqui.</p>
+
+    <hr/>
+
+    <div class="section-title">Resumo Geral - Tarefas</div>
+    <table class="summary-table">
+        <tr>
+            <td class="summary-box">
+                <span class="count done" th:text="${summary.doneCount}">0</span>
+                <span class="label">Concluídas</span>
+            </td>
+            <td class="summary-box">
+                <span class="count in-progress" th:text="${summary.inProgressCount}">0</span>
+                <span class="label">Em Progresso</span>
+            </td>
+            <td class="summary-box">
+                <span class="count todo" th:text="${summary.toDoCount}">0</span>
+                <span class="label">A Fazer</span>
+            </td>
+            <td class="summary-box">
+                <span class="count overdue" th:text="${summary.overdueCount}">0</span>
+                <span class="label">Atrasadas</span>
+            </td>
+        </tr>
+    </table>
+
+    <hr/>
+
+    <div class="section-title">Membros</div>
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Nome de Usuário</th>
+            <th>Email</th>
+            <th>Função</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="member : ${project.members}">
+            <td th:text="${member.user.username}">username</td>
+            <td th:text="${member.user.email}">email</td>
+            <td th:text="${member.projectRole}">role</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${not #lists.isEmpty(project.tasks)}">
+        <hr/>
+        <div class="section-title">Tarefas</div>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Data de Entrega</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="task : ${project.tasks}">
+                <td th:text="${task.title}">Título da Tarefa</td>
+                <td th:text="${task.status}">Status</td>
+                <td th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        Relatório gerado por TeamTacles em <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+    </div>
+</div>
+</body>
+</html>
