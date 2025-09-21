@@ -5,7 +5,9 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.project.dto.report.TaskSummary;
 import br.com.teamtacles.project.dto.request.*;
+import br.com.teamtacles.project.dto.response.DashboardSummaryDTO;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
@@ -15,6 +17,8 @@ import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.project.validator.*;
+import br.com.teamtacles.task.enumeration.ETaskStatus;
+import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.service.TeamAuthorizationService;
@@ -28,8 +32,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.time.OffsetDateTime;
 
 @Service
 public class ProjectService {
@@ -343,5 +350,48 @@ public class ProjectService {
         dto.setProjectRole(membership.getProjectRole());
         return dto;
     }
+
+    @Transactional(readOnly = true)
+    public DashboardSummaryDTO getDashboard(Long projectId, User actingUser) { // <-- MUDANÇA AQUI
+        Project project = findProjectWithMembersAndTasksOrThrow(projectId);
+        projectAuthorizationService.checkProjectMembership(actingUser, project);
+        return calculateDashboardSummary(project.getTasks());
+    }
+
+    // Função auxiliar
+    private DashboardSummaryDTO calculateDashboardSummary(Set<Task> tasks) {
+        long doneCount = 0;
+        long inProgressCount = 0;
+        long toDoCount = 0;
+        long overdueCount = 0;
+
+        // Pega o momento atual UMA VEZ pra performance
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (Task task : tasks) {
+            switch (task.getStatus()) {
+                case DONE:
+                    doneCount++;
+                    break;
+                case IN_PROGRESS:
+                    inProgressCount++;
+                    break;
+                case TO_DO:
+                    toDoCount++;
+                    break;
+            }
+
+            if (task.getStatus() != ETaskStatus.DONE &&
+                    task.getDueDate() != null &&
+                    task.getDueDate().isBefore(now)) {
+                overdueCount++;
+            }
+        }
+        long totalCount = tasks.size();
+
+        return new DashboardSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
+    }
+
+
 }
 

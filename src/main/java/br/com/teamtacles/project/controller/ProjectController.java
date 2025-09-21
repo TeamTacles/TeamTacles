@@ -3,7 +3,9 @@ package br.com.teamtacles.project.controller;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
+import br.com.teamtacles.project.dto.report.TaskSummary;
 import br.com.teamtacles.project.dto.request.*;
+import br.com.teamtacles.project.dto.response.DashboardSummaryDTO;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
@@ -163,4 +165,15 @@ public class ProjectController {
         projectService.deleteMembershipFromProject(projectId, userId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{projectId}/dashboard/summary")
+    public ResponseEntity<DashboardSummaryDTO> getProjectDashboardSummary(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser
+    ) {
+        DashboardSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
+        return ResponseEntity.ok(summary);
+    }
+
+
 }
