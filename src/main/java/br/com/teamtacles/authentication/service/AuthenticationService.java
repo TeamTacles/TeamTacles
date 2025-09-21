@@ -5,7 +5,7 @@ import br.com.teamtacles.user.model.User;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.user.repository.UserRepository;
 
 import java.time.LocalDateTime;

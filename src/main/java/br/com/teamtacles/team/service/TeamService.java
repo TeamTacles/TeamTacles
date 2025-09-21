@@ -1,6 +1,6 @@
 package br.com.teamtacles.team.service;
 
-import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.team.dto.request.*;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

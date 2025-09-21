@@ -3,19 +3,17 @@ package br.com.teamtacles.project.controller;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
-import br.com.teamtacles.project.dto.report.TaskSummary;
+import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
-import br.com.teamtacles.project.dto.response.DashboardSummaryDTO;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.project.service.PdfExportProjectService;
+import br.com.teamtacles.infrastructure.export.ProjectPdfExportService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
 import jakarta.validation.Valid;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,19 +22,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-
 @RestController
 @RequestMapping("/api/project")
 public class ProjectController {
 
     private final ProjectService projectService;
-    private final PdfExportProjectService pdfExportProjectService;
+    private final ProjectPdfExportService projectPdfExportService;
 
-    public ProjectController(ProjectService projectService, PdfExportProjectService pdfExportProjectService) {
+    public ProjectController(ProjectService projectService, ProjectPdfExportService projectPdfExportService) {
         this.projectService = projectService;
-        this.pdfExportProjectService = pdfExportProjectService;
+        this.projectPdfExportService = projectPdfExportService;
     }
 
     @PostMapping
@@ -129,7 +124,7 @@ public class ProjectController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
 
         Project project = projectService.getProjectWithMembersAndTasks(projectId, authenticatedUser.getUser());
-        byte[] pdfReportBytes = pdfExportProjectService.export(project);
+        byte[] pdfReportBytes = projectPdfExportService.export(project);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -167,13 +162,11 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/dashboard/summary")
-    public ResponseEntity<DashboardSummaryDTO> getProjectDashboardSummary(
+    public ResponseEntity<TaskSummaryDTO> getProjectDashboardSummary(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser
     ) {
-        DashboardSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
+        TaskSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
         return ResponseEntity.ok(summary);
     }
-
-
 }

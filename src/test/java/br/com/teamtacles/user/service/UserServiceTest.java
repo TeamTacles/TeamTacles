@@ -1,7 +1,7 @@
 package br.com.teamtacles.user.service;
 
 import br.com.teamtacles.common.exception.*;
-import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
 import br.com.teamtacles.user.dto.response.UserResponseDTO;

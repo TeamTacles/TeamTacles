@@ -1,7 +1,7 @@
 package br.com.teamtacles.team.service;
 
 import br.com.teamtacles.common.exception.ResourceAlreadyExistsException;
-import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;

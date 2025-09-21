@@ -1,6 +1,6 @@
 package br.com.teamtacles.authentication.service;
 
-import br.com.teamtacles.common.service.EmailService;
+import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.security.UserDetailService;
 import br.com.teamtacles.user.model.User;
