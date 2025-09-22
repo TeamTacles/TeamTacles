@@ -54,7 +54,6 @@ public class ProjectService {
     private final ProjectInvitationValidator projectInvitationValidator;
 
     private final UserService userService;
-    private final TaskRepository taskRepository;
     private final EmailService emailService;
     private final TeamService teamService;
     private final TeamAuthorizationService teamAuthorizationService;
@@ -80,7 +79,6 @@ public class ProjectService {
         this.projectAuthorizationService = projectAuthorizationService;
         this.pagedResponseMapper = pagedResponseMapper;
         this.userService = userService;
-        this.taskRepository = taskRepository;
         this.emailService = emailService;
         this.teamService = teamService;
         this.teamAuthorizationService = teamAuthorizationService;
@@ -199,13 +197,9 @@ public class ProjectService {
         return pagedResponseMapper.toPagedResponse(projectMemberResponseDTOPage, ProjectMemberResponseDTO.class);
     }
 
-    public Project getProjectForPdfExport(Long projectId, User actingUser, TaskFilterDTO taskFilter) {
-        Project project = findProjectByIdForReportOrThrow(projectId, taskFilter.getAssignedUserId());
-        projectAuthorizationService.checkProjectOwner(actingUser, project);
-
-        List<Task> filteredTasks = taskRepository.findTasksByProjectWithFiltersForReport(projectId, taskFilter);
-        project.setTasks(new HashSet<>(filteredTasks));
-
+    public Project getProjectByIdForReport(Long projectId, Long userId, User actingUser) {
+        Project project = findProjectByIdForReportOrThrow(projectId, userId);
+        projectAuthorizationService.checkProjectAdmin(actingUser, project);
         return project;
     }
 
@@ -314,35 +308,10 @@ public class ProjectService {
         return projectMemberRepository.findProjectMembersAsUsers(projectId, userIds);
     }
 
-    public TaskSummaryDTO calculateTaskSummary(Set<Task> tasks) {
-        long doneCount = 0;
-        long inProgressCount = 0;
-        long toDoCount = 0;
-        long overdueCount = 0;
-
-        OffsetDateTime now = OffsetDateTime.now();
-
-        for (Task task : tasks) {
-            switch (task.getStatus()) {
-                case DONE:
-                    doneCount++;
-                    break;
-                case IN_PROGRESS:
-                    inProgressCount++;
-                    break;
-                case TO_DO:
-                    toDoCount++;
-                    break;
-            }
-
-            if (task.getStatus() != ETaskStatus.DONE &&
-                    task.getDueDate() != null &&
-                    task.getDueDate().isBefore(now)) {
-                overdueCount++;
-            }
-        }
-        long totalCount = tasks.size();
-        return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
+    public String getProjectTitle(Long projectId) {
+        return projectRepository.findById(projectId)
+                .map(Project::getTitle)
+                .orElse("project-report");
     }
 
     private Project findProjectByIdForReportOrThrow(Long projectId, Long userId) {

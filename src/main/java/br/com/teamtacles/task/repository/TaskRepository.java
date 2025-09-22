@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import java.util.Set;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByProject(Pageable pageable, Project project);
@@ -33,6 +33,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND (:#{#filter.assignedUserId} IS NULL OR a.user.id = :#{#filter.assignedUserId}) " +
             "AND (:#{#filter.updatedAtAfter} IS NULL OR CAST(t.updatedAt AS date) >= :#{#filter.updatedAtAfter}) " +
             "AND (:#{#filter.updatedAtBefore} IS NULL OR CAST(t.updatedAt AS date) <= :#{#filter.updatedAtBefore})")
-    List<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterDTO filter);
+    Set<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterDTO filter);
 }
 

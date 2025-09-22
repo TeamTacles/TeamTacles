@@ -3,13 +3,13 @@ package br.com.teamtacles.project.controller;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
+import br.com.teamtacles.infrastructure.export.project.dto.PdfExportResult;
 import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
-import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.infrastructure.export.ProjectPdfExportService;
+import br.com.teamtacles.infrastructure.export.project.ProjectPdfExportService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
@@ -124,16 +124,15 @@ public class ProjectController {
             @PathVariable Long projectId,
             @ModelAttribute TaskFilterDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        Project project = projectService.getProjectForPdfExport(projectId, authenticatedUser.getUser(), filter);
-        byte[] pdfReportBytes = projectPdfExportService.export(project);
+
+        PdfExportResult pdfReport = projectPdfExportService.generateProjectPdf(projectId, authenticatedUser.getUser(), filter);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
 
-        String fileName = ReportFileNameGenerator.gerenateForProject(project);
-        headers.setContentDispositionFormData("attachment", fileName);
+        headers.setContentDispositionFormData("attachment", pdfReport.getFilename());
 
-        return ResponseEntity.ok().headers(headers).body(pdfReportBytes);
+        return ResponseEntity.ok().headers(headers).body(pdfReport.getContent());
     }
 
     @PatchMapping("/{projectId}")

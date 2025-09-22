@@ -1,9 +1,14 @@
-package br.com.teamtacles.infrastructure.export;
+package br.com.teamtacles.infrastructure.export.project;
 
 import br.com.teamtacles.common.exception.PdfGenerationException;
+import br.com.teamtacles.common.util.ReportFileNameGenerator;
+import br.com.teamtacles.infrastructure.export.project.dto.PdfExportResult;
 import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
+import br.com.teamtacles.task.dto.request.TaskFilterDTO;
+import br.com.teamtacles.task.service.TaskService;
+import br.com.teamtacles.user.model.User;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -20,15 +25,28 @@ public class ProjectPdfExportService {
 
     private final TemplateEngine templateEngine;
     private final ProjectService projectService;
+    private final TaskService taskService;
 
-    public ProjectPdfExportService(TemplateEngine templateEngine, ProjectService projectService) {
+    public ProjectPdfExportService(TemplateEngine templateEngine, ProjectService projectService, TaskService taskService) {
         this.templateEngine = templateEngine;
         this.projectService = projectService;
+        this.taskService = taskService;
     }
 
-    public byte[] export(Project project) {
+    public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterDTO taskFilter) {
+        Project project = projectService.getProjectByIdForReport(projectId, taskFilter.getAssignedUserId(), actingUser);
+        project.setTasks(taskService.findFilteredTasksForProject(projectId, taskFilter));
+        TaskSummaryDTO summary = taskService.calculateTaskSummary(project.getTasks());
+        byte[] pdfContent = export(project, summary);
+
+        String filename = ReportFileNameGenerator.gerenateForProject(project);
+
+        return new PdfExportResult(pdfContent, filename);
+    }
+
+    public byte[] export(Project project, TaskSummaryDTO summary) {
         try {
-            TaskSummaryDTO summary = projectService.calculateTaskSummary(project.getTasks());
+
             String logoDataUri = loadLogoAsBase64("static/images/logo.png");
 
             Context context = new Context();

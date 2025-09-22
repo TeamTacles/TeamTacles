@@ -3,6 +3,7 @@ package br.com.teamtacles.task.service;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
+import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
@@ -222,6 +223,37 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    public TaskSummaryDTO calculateTaskSummary(Set<Task> tasks) {
+        long doneCount = 0;
+        long inProgressCount = 0;
+        long toDoCount = 0;
+        long overdueCount = 0;
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (Task task : tasks) {
+            switch (task.getStatus()) {
+                case DONE:
+                    doneCount++;
+                    break;
+                case IN_PROGRESS:
+                    inProgressCount++;
+                    break;
+                case TO_DO:
+                    toDoCount++;
+                    break;
+            }
+
+            if (task.getStatus() != ETaskStatus.DONE &&
+                    task.getDueDate() != null &&
+                    task.getDueDate().isBefore(now)) {
+                overdueCount++;
+            }
+        }
+        long totalCount = tasks.size();
+        return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
+    }
+
     private UserAssignmentResponseDTO toUserAssignmentResponseDTO(TaskAssignment assignment) {
         UserAssignmentResponseDTO dto = new UserAssignmentResponseDTO();
         dto.setUserId(assignment.getUser().getId());
@@ -230,7 +262,7 @@ public class TaskService {
         return dto;
     }
 
-    public List<Task> findFilteredTasksForProject(Long projectId, TaskFilterDTO filter) {
+    public Set<Task> findFilteredTasksForProject(Long projectId, TaskFilterDTO filter) {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 }
