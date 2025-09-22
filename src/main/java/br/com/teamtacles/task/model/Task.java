@@ -4,15 +4,15 @@ import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"project", "owner", "assignments"})
 @Entity
@@ -21,6 +21,7 @@ public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long id;
 
     @Column(nullable = false, length = 100)
@@ -34,7 +35,12 @@ public class Task {
     private ETaskStatus status;
 
     @Column(nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Setter(AccessLevel.NONE)
+    private OffsetDateTime updatedAt;
 
     private OffsetDateTime dueDate;
 

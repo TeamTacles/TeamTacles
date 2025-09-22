@@ -16,8 +16,11 @@ import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.project.validator.*;
+import br.com.teamtacles.task.dto.request.TaskFilterDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.task.repository.TaskRepository;
+import br.com.teamtacles.task.service.TaskService;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.service.TeamAuthorizationService;
@@ -51,6 +54,7 @@ public class ProjectService {
     private final ProjectInvitationValidator projectInvitationValidator;
 
     private final UserService userService;
+    private final TaskRepository taskRepository;
     private final EmailService emailService;
     private final TeamService teamService;
     private final TeamAuthorizationService teamAuthorizationService;
@@ -61,7 +65,7 @@ public class ProjectService {
     public ProjectService(
             ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
             ModelMapper modelMapper, ProjectAuthorizationService projectAuthorizationService,
-            PagedResponseMapper pagedResponseMapper, UserService userService,
+            PagedResponseMapper pagedResponseMapper, UserService userService, TaskRepository taskRepository,
             EmailService emailService, TeamService teamService,
             TeamAuthorizationService teamAuthorizationService,
             ProjectTitleUniquenessValidator projectTitleUniquenessValidator,
@@ -76,6 +80,7 @@ public class ProjectService {
         this.projectAuthorizationService = projectAuthorizationService;
         this.pagedResponseMapper = pagedResponseMapper;
         this.userService = userService;
+        this.taskRepository = taskRepository;
         this.emailService = emailService;
         this.teamService = teamService;
         this.teamAuthorizationService = teamAuthorizationService;
@@ -194,16 +199,14 @@ public class ProjectService {
         return pagedResponseMapper.toPagedResponse(projectMemberResponseDTOPage, ProjectMemberResponseDTO.class);
     }
 
-    public Project getProjectWithMembersAndTasks(Long projectId, User actingUser) {
-        Project project = findProjectWithMembersAndTasksOrThrow(projectId);
+    public Project getProjectForPdfExport(Long projectId, User actingUser, TaskFilterDTO taskFilter) {
+        Project project = findProjectByIdForReportOrThrow(projectId, taskFilter.getAssignedUserId());
         projectAuthorizationService.checkProjectOwner(actingUser, project);
-        return project;
-    }
 
-    public TaskSummaryDTO getDashboard(Long projectId, User actingUser) {
-        Project project = findProjectWithMembersAndTasksOrThrow(projectId);
-        projectAuthorizationService.checkProjectMembership(actingUser, project);
-        return calculateTaskSummary(project.getTasks());
+        List<Task> filteredTasks = taskRepository.findTasksByProjectWithFiltersForReport(projectId, taskFilter);
+        project.setTasks(new HashSet<>(filteredTasks));
+
+        return project;
     }
 
     @Transactional
@@ -342,9 +345,9 @@ public class ProjectService {
         return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
     }
 
-    private Project findProjectWithMembersAndTasksOrThrow(Long projectId) {
-        return projectRepository.findByIdWithMembersAndTasks(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+    private Project findProjectByIdForReportOrThrow(Long projectId, Long userId) {
+        return projectRepository.findProjectByIdForReport(projectId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id and user"));
     }
 
     private Project findProjectByIdOrThrow(Long projectId) {

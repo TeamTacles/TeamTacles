@@ -13,6 +13,7 @@ import br.com.teamtacles.infrastructure.export.ProjectPdfExportService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.task.dto.request.TaskFilterDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -121,9 +122,9 @@ public class ProjectController {
     @GetMapping(value = "/{projectId}/export/pdf")
     public ResponseEntity<byte[]> exportProjectToPdf(
             @PathVariable Long projectId,
+            @ModelAttribute TaskFilterDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-
-        Project project = projectService.getProjectWithMembersAndTasks(projectId, authenticatedUser.getUser());
+        Project project = projectService.getProjectForPdfExport(projectId, authenticatedUser.getUser(), filter);
         byte[] pdfReportBytes = projectPdfExportService.export(project);
 
         HttpHeaders headers = new HttpHeaders();
@@ -166,7 +167,7 @@ public class ProjectController {
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser
     ) {
-        TaskSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
-        return ResponseEntity.ok(summary);
+        //TaskSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
+        return ResponseEntity.ok(/*summary*/ null);
     }
 }

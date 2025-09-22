@@ -26,8 +26,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Page<Project> findProjectsByUserWithFilters(@Param("user") User user, @Param("filter") ProjectFilterDTO filter, Pageable pageable);
 
     @Query("SELECT p FROM Project p " +
-            "LEFT JOIN FETCH p.members " +
-            "LEFT JOIN FETCH p.tasks " +
-            "WHERE p.id = :projectId")
-    Optional<Project> findByIdWithMembersAndTasks(@Param("projectId") Long projectId);
+            "LEFT JOIN FETCH p.members mem " +
+            "LEFT JOIN FETCH mem.user u " +
+            "WHERE p.id = :projectId " +
+            "AND (:userId IS NULL OR mem.user.id = :userId)")
+    Optional<Project> findProjectByIdForReport(@Param("projectId") Long projectId, @Param("userId") Long userId);
 }

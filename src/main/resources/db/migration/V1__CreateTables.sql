@@ -73,6 +73,7 @@ CREATE TABLE tasks (
     title VARCHAR(100) NOT NULL,
     description VARCHAR(500),
     status VARCHAR(30) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     due_date TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,

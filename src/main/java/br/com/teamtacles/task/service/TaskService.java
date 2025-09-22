@@ -229,4 +229,8 @@ public class TaskService {
         dto.setTaskRole(assignment.getTaskRole());
         return dto;
     }
+
+    public List<Task> findFilteredTasksForProject(Long projectId, TaskFilterDTO filter) {
+        return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
+    }
 }
