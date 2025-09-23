@@ -7,6 +7,7 @@ import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
+import br.com.teamtacles.project.dto.response.ProjectReportDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.enumeration.EProjectRole;
@@ -36,6 +37,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
+import br.com.teamtacles.project.dto.response.MemberPerformanceDTO;
+import br.com.teamtacles.project.dto.response.ProjectReportDTO;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -345,6 +352,40 @@ public class ProjectService {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 
+    @Transactional(readOnly = true)
+    public ProjectReportDTO getProjectReport(Long projectId, User actingUser) {
+        projectAuthorizationService.checkProjectMembership(actingUser, findProjectByIdOrThrow(projectId));
+
+        Project projectWithTasks = findProjectWithMembersAndTasksOrThrow(projectId);
+        TaskSummaryDTO summary = calculateTaskSummary(projectWithTasks.getTasks());
+
+        List<MemberPerformanceDTO> ranking = calculateMemberPerformanceRanking(projectId);
+
+        return ProjectReportDTO.builder()
+                .summary(summary)
+                .memberPerformanceRanking(ranking)
+                .build();
+    }
+
+    private List<MemberPerformanceDTO> calculateMemberPerformanceRanking(Long projectId) {
+        List<Task> completedTasks = taskRepository.findAllByProjectIdAndStatusWithAssignments(projectId, ETaskStatus.DONE);
+        return completedTasks.stream()
+                .flatMap(task -> task.getAssignments().stream())
+                .collect(Collectors.groupingBy(
+                        assignment -> assignment.getUser(),
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> new MemberPerformanceDTO(
+                        entry.getKey().getId(),
+                        entry.getKey().getUsername(),
+                        entry.getValue()
+                ))
+                .sorted(Comparator.comparingLong(MemberPerformanceDTO::getCompletedTasksCount).reversed())
+                .collect(Collectors.toList());
+
+    }
+
     private Project findProjectByIdForReportOrThrow(Long projectId, Long userId) {
         return projectRepository.findProjectByIdForReport(projectId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id and user"));
@@ -387,5 +428,13 @@ public class ProjectService {
         dto.setProjectRole(membership.getProjectRole());
         return dto;
     }
+
+
+    private Project findProjectWithMembersAndTasksOrThrow(Long projectId) {
+        return projectRepository.findByIdWithMembersAndTasks(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+    }
+
+
 }
 

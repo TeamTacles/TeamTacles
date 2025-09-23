@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Set;
+import br.com.teamtacles.task.enumeration.ETaskStatus;
 
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
@@ -36,5 +37,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND (:#{#filter.updatedAtAfter} IS NULL OR CAST(t.updatedAt AS date) >= :#{#filter.updatedAtAfter}) " +
             "AND (:#{#filter.updatedAtBefore} IS NULL OR CAST(t.updatedAt AS date) <= :#{#filter.updatedAtBefore})")
     Set<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter);
+
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignments WHERE t.project.id = :projectId AND t.status = :status")
+    List<Task> findAllByProjectIdAndStatusWithAssignments(@Param("projectId") Long projectId, @Param("status") ETaskStatus status);
 }
 

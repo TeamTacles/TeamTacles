@@ -3,6 +3,7 @@ package br.com.teamtacles.project.controller;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.project.dto.request.PdfExportResult;
+import br.com.teamtacles.project.dto.response.ProjectReportDTO;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
@@ -160,12 +161,12 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{projectId}/dashboard/summary")
-    public ResponseEntity<TaskSummaryDTO> getProjectDashboardSummary(
-            @PathVariable Long projectId,
-            @AuthenticationPrincipal UserAuthenticated authenticatedUser
+    @GetMapping("/{projectId}/dashboard")
+    public ResponseEntity<ProjectReportDTO> getProjectDashboard(
+     @PathVariable Long projectId,
+     @AuthenticationPrincipal UserAuthenticated authenticatedUser
     ) {
-        //TaskSummaryDTO summary = projectService.getDashboard(projectId, authenticatedUser.getUser());
-        return ResponseEntity.ok(/*summary*/ null);
+        ProjectReportDTO report = projectService.getProjectReport(projectId, authenticatedUser.getUser());
+        return ResponseEntity.ok(report);
     }
 }

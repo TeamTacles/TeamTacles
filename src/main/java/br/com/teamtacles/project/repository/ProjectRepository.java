@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.Optional;
+
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
@@ -31,4 +33,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "WHERE p.id = :projectId " +
             "AND (:userId IS NULL OR mem.user.id = :userId)")
     Optional<Project> findProjectByIdForReport(@Param("projectId") Long projectId, @Param("userId") Long userId);
+
+
+    @Query("SELECT p FROM Project p LEFT JOIN FETCH p.members LEFT JOIN FETCH p.tasks WHERE p.id = :projectId")
+    Optional<Project> findByIdWithMembersAndTasks(@Param("projectId") Long projectId);
+
 }
