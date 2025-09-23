@@ -1,12 +1,13 @@
-package br.com.teamtacles.infrastructure.export.project;
+package br.com.teamtacles.infrastructure.export;
 
 import br.com.teamtacles.common.exception.PdfGenerationException;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
-import br.com.teamtacles.infrastructure.export.project.dto.PdfExportResult;
-import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
+import br.com.teamtacles.project.dto.request.PdfExportResult;
+import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
-import br.com.teamtacles.task.dto.request.TaskFilterDTO;
+import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
+import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.service.TaskService;
 import br.com.teamtacles.user.model.User;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
@@ -19,32 +20,32 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
+import java.util.Set;
 
 @Service
 public class ProjectPdfExportService {
 
     private final TemplateEngine templateEngine;
     private final ProjectService projectService;
-    private final TaskService taskService;
 
     public ProjectPdfExportService(TemplateEngine templateEngine, ProjectService projectService, TaskService taskService) {
         this.templateEngine = templateEngine;
         this.projectService = projectService;
-        this.taskService = taskService;
     }
 
-    public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterDTO taskFilter) {
+    public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterReportDTO taskFilter) {
         Project project = projectService.getProjectByIdForReport(projectId, taskFilter.getAssignedUserId(), actingUser);
-        project.setTasks(taskService.findFilteredTasksForProject(projectId, taskFilter));
-        TaskSummaryDTO summary = taskService.calculateTaskSummary(project.getTasks());
-        byte[] pdfContent = export(project, summary);
+        Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
+        TaskSummaryDTO summary = projectService.calculateTaskSummary(tasks);
+
+        byte[] pdfContent = export(project, summary, tasks);
 
         String filename = ReportFileNameGenerator.gerenateForProject(project);
 
         return new PdfExportResult(pdfContent, filename);
     }
 
-    public byte[] export(Project project, TaskSummaryDTO summary) {
+    public byte[] export(Project project, TaskSummaryDTO summary, Set<Task> tasks) {
         try {
 
             String logoDataUri = loadLogoAsBase64("static/images/logo.png");
@@ -52,6 +53,7 @@ public class ProjectPdfExportService {
             Context context = new Context();
             context.setVariable("project", project);
             context.setVariable("summary", summary);
+            context.setVariable("tasks", tasks);
             context.setVariable("logoUrl", logoDataUri);
 
             String html = templateEngine.process("project-report-template", context);

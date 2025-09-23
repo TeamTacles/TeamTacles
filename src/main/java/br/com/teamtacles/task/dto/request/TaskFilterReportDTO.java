@@ -7,7 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 
 @Data
-public class TaskFilterDTO {
+public class TaskFilterReportDTO {
 
     private String title;
     private ETaskStatus status;

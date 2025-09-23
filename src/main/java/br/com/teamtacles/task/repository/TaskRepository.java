@@ -1,7 +1,7 @@
 package br.com.teamtacles.task.repository;
 
 import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.task.dto.request.TaskFilterDTO;
+import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.model.Task;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Set;
+
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByProject(Pageable pageable, Project project);
@@ -23,7 +25,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND ( :#{#filter.conclusionDateBefore} IS NULL OR CAST(t.completedAt AS date) <= :#{#filter.conclusionDateBefore} ) " +
             "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
             "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
-    Page<Task> findTasksByProjectWithFilters(@Param("projectId") Long projectId, @Param("filter") TaskFilterDTO filter, Pageable pageable);
+    Page<Task> findTasksByProjectWithFilters(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter, Pageable pageable);
 
     @Query("SELECT DISTINCT t FROM Task t " +
             "LEFT JOIN FETCH t.assignments a " +
@@ -33,6 +35,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND (:#{#filter.assignedUserId} IS NULL OR a.user.id = :#{#filter.assignedUserId}) " +
             "AND (:#{#filter.updatedAtAfter} IS NULL OR CAST(t.updatedAt AS date) >= :#{#filter.updatedAtAfter}) " +
             "AND (:#{#filter.updatedAtBefore} IS NULL OR CAST(t.updatedAt AS date) <= :#{#filter.updatedAtBefore})")
-    Set<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterDTO filter);
+    Set<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter);
 }
 

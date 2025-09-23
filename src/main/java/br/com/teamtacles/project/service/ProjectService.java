@@ -5,7 +5,6 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.infrastructure.email.EmailService;
-import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
@@ -16,11 +15,11 @@ import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.project.validator.*;
-import br.com.teamtacles.task.dto.request.TaskFilterDTO;
+import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
+import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.repository.TaskRepository;
-import br.com.teamtacles.task.service.TaskService;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.service.TeamAuthorizationService;
@@ -35,8 +34,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
 import java.time.OffsetDateTime;
+import java.util.*;
 
 @Service
 public class ProjectService {
@@ -60,6 +59,7 @@ public class ProjectService {
 
     private final ModelMapper modelMapper;
     private final PagedResponseMapper pagedResponseMapper;
+    private final TaskRepository taskRepository;
 
     public ProjectService(
             ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
@@ -87,6 +87,7 @@ public class ProjectService {
         this.projectTokenValidator = projectTokenValidator;
         this.projectMembershipActionValidator = projectMembershipActionValidator;
         this.projectInvitationValidator = projectInvitationValidator;
+        this.taskRepository = taskRepository;
     }
 
     @Transactional
@@ -308,10 +309,40 @@ public class ProjectService {
         return projectMemberRepository.findProjectMembersAsUsers(projectId, userIds);
     }
 
-    public String getProjectTitle(Long projectId) {
-        return projectRepository.findById(projectId)
-                .map(Project::getTitle)
-                .orElse("project-report");
+    public TaskSummaryDTO calculateTaskSummary(Set<Task> tasks) {
+        long doneCount = 0;
+        long inProgressCount = 0;
+        long toDoCount = 0;
+        long overdueCount = 0;
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (Task task : tasks) {
+            switch (task.getStatus()) {
+                case DONE:
+                    doneCount++;
+                    break;
+                case IN_PROGRESS:
+                    inProgressCount++;
+                    break;
+                case TO_DO:
+                    toDoCount++;
+                    break;
+            }
+
+            if (task.getStatus() != ETaskStatus.DONE &&
+                    task.getDueDate() != null &&
+                    task.getDueDate().isBefore(now)) {
+                overdueCount++;
+            }
+        }
+
+        long totalCount = tasks.size();
+        return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
+    }
+
+    public Set<Task> findFilteredTasksForProject(Long projectId, TaskFilterReportDTO filter) {
+        return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 
     private Project findProjectByIdForReportOrThrow(Long projectId, Long userId) {

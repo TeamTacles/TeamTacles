@@ -1,6 +1,6 @@
 package br.com.teamtacles.project.dto.response;
 
-import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
+import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import lombok.*;
 
@@ -13,5 +13,6 @@ public class DashboardResponseDTO {
 
     private TaskSummaryDTO summary;
     private List<TaskResponseDTO> recentsTasks;
+    private List<MemberPerformanceDTO> memberPerformanceRanking;
 
 }

@@ -2,18 +2,17 @@ package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
-import br.com.teamtacles.common.util.ReportFileNameGenerator;
-import br.com.teamtacles.infrastructure.export.project.dto.PdfExportResult;
-import br.com.teamtacles.project.dto.common.TaskSummaryDTO;
+import br.com.teamtacles.project.dto.request.PdfExportResult;
+import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
-import br.com.teamtacles.infrastructure.export.project.ProjectPdfExportService;
+import br.com.teamtacles.infrastructure.export.ProjectPdfExportService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
-import br.com.teamtacles.task.dto.request.TaskFilterDTO;
+import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -122,7 +121,7 @@ public class ProjectController {
     @GetMapping(value = "/{projectId}/export/pdf")
     public ResponseEntity<byte[]> exportProjectToPdf(
             @PathVariable Long projectId,
-            @ModelAttribute TaskFilterDTO filter,
+            @ModelAttribute TaskFilterReportDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
 
         PdfExportResult pdfReport = projectPdfExportService.generateProjectPdf(projectId, authenticatedUser.getUser(), filter);

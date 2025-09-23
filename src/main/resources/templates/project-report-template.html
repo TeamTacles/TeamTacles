@@ -4,6 +4,7 @@
     <meta charset="UTF-8"/>
     <title>Relatório do Projeto</title>
     <style>
+        /* Seus estilos CSS permanecem os mesmos */
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap');
 
         /* Estilos Globais */
@@ -191,8 +192,7 @@
         </tbody>
     </table>
 
-    <div th:if="${not #lists.isEmpty(project.tasks)}">
-        <hr/>
+    <div th:if="${not #lists.isEmpty(tasks)}"> <hr/>
         <div class="section-title">Tarefas</div>
         <table class="data-table">
             <thead>
@@ -203,7 +203,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="task : ${project.tasks}">
+            <tr th:each="task : ${tasks}">
                 <td th:text="${task.title}">Título da Tarefa</td>
                 <td th:text="${task.status}">Status</td>
                 <td th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</td>
