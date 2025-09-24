@@ -43,6 +43,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import br.com.teamtacles.config.aop.BusinessActivityLog;
 
 @Service
 public class ProjectService {
@@ -97,6 +98,7 @@ public class ProjectService {
         this.taskRepository = taskRepository;
     }
 
+    @BusinessActivityLog(action = "Create Project")
     @Transactional
     public ProjectResponseDTO createProject(ProjectRequestRegisterDTO requestDTO, User actingUser) {
         projectTitleUniquenessValidator.validate(requestDTO.getTitle(), actingUser);
@@ -112,6 +114,7 @@ public class ProjectService {
         return modelMapper.map(savedProject, ProjectResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Update Project")
     @Transactional
     public ProjectResponseDTO updateProject(Long projectId, ProjectRequestUpdateDTO requestDTO, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -133,6 +136,8 @@ public class ProjectService {
         return modelMapper.map(updatedProject, ProjectResponseDTO.class);
     }
 
+
+    @BusinessActivityLog(action = "Update Project Member Role")
     @Transactional
     public ProjectMemberResponseDTO updateMemberRole(Long projectId, Long userIdToUpdate, UpdateMemberRoleProjectRequestDTO dto, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -150,6 +155,7 @@ public class ProjectService {
         return toProjectMemberResponseDTO(updatedMembership);
     }
 
+    @BusinessActivityLog(action = "Import Team Members to Project")
     @Transactional
     public void importTeamMembersToProject(Long projectId, Long teamId, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -211,6 +217,8 @@ public class ProjectService {
         return project;
     }
 
+
+    @BusinessActivityLog(action = "Invite Member to Project")
     @Transactional
     public void inviteMember(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -232,6 +240,7 @@ public class ProjectService {
         emailService.sendProjectInvitationEmail(userToInvite.getEmail(), project.getTitle(), newMember.getInvitationToken());
     }
 
+    @BusinessActivityLog(action = "Accept Project Invitation via Email Token")
     @Transactional
     public void acceptInvitation(String token) {
         if (token == null || token.isEmpty()) {
@@ -248,6 +257,7 @@ public class ProjectService {
         projectMemberRepository.save(membership);
     }
 
+    @BusinessActivityLog(action = "Generate Project Invitation Link")
     @Transactional
     public InviteLinkResponseDTO generateInvitedLink(Long projectId, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -263,6 +273,7 @@ public class ProjectService {
             project.getInvitationTokenExpiry());
     }
 
+    @BusinessActivityLog(action = "Accept Project Invitation via Link")
     @Transactional
     public ProjectMemberResponseDTO acceptProjectInvitationLink(String token, User actingUser) {
         if (token == null || token.isEmpty()) {
@@ -283,6 +294,7 @@ public class ProjectService {
         return toProjectMemberResponseDTO(newMember);
     }
 
+    @BusinessActivityLog(action = "Delete Project")
     @Transactional
     public void deleteProject(Long projectId, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -290,6 +302,7 @@ public class ProjectService {
         projectRepository.delete(project);
     }
 
+    @BusinessActivityLog(action = "Remove Member from Project")
     @Transactional
     public void deleteMembershipFromProject(Long projectId, Long userIdToDelete, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
@@ -352,6 +365,7 @@ public class ProjectService {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 
+    @BusinessActivityLog(action = "Generate Project Report")
     @Transactional(readOnly = true)
     public ProjectReportDTO getProjectReport(Long projectId, User actingUser) {
         projectAuthorizationService.checkProjectMembership(actingUser, findProjectByIdOrThrow(projectId));

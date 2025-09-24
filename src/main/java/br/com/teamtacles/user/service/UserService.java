@@ -1,6 +1,7 @@
 package br.com.teamtacles.user.service;
 
 import br.com.teamtacles.common.exception.*;
+import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
@@ -55,6 +56,7 @@ public class UserService {
         this.newPasswordValidator = newPasswordValidator;
     }
 
+    @BusinessActivityLog(action = "Create User Account")
     @Transactional
     public UserResponseDTO createUser(UserRequestRegisterDTO registerDTO) {
         userUniquenessValidator.validate(registerDTO);
@@ -80,7 +82,7 @@ public class UserService {
 
         return modelMapper.map(savedUser, UserResponseDTO.class);
     }
-
+    @BusinessActivityLog(action = "Update User Profile")
     @Transactional
     public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
         if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank() && !userRequestDTO.getUsername().equals(user.getUsername())) {
@@ -107,6 +109,7 @@ public class UserService {
         return modelMapper.map(user, UserResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Reset User Password")
     @Transactional
     public void resetPassword(String token, String newPassword, String passwordConfirm) {
         passwordMatchValidator.validate(newPassword, passwordConfirm);
@@ -123,7 +126,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-
+    @BusinessActivityLog(action = "Verify User Account")
     @Transactional
     public void verifyUser(String token) {
         User user = findByVerificationTokenOrThrow(token);
@@ -135,7 +138,7 @@ public class UserService {
 
         userRepository.save(user);
     }
-
+    @BusinessActivityLog(action = "Resend Verification Email")
     @Transactional
     public void resendVerificationEmail(String email) {
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
@@ -150,7 +153,7 @@ public class UserService {
             }
         });
     }
-
+    @BusinessActivityLog(action = "Delete User Account")
     @Transactional
     public void deleteUser(User user) {
         userRepository.delete(user);

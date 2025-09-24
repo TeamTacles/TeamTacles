@@ -1,5 +1,6 @@
 package br.com.teamtacles.team.service;
 
+import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.team.dto.request.*;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
@@ -71,6 +72,7 @@ public class TeamService {
         this.teamInvitationValidator = teamInvitationValidator;
     }
 
+    @BusinessActivityLog(action = "Create Team")
     @Transactional
     public TeamResponseDTO createTeam(TeamRequestRegisterDTO dto, User actingUser) {
         teamNameUniquenessValidator.validate(dto.getName(), actingUser);
@@ -86,6 +88,7 @@ public class TeamService {
         return modelMapper.map(savedTeam, TeamResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Update Team")
     @Transactional
     public TeamResponseDTO updateTeam(Long teamId, TeamRequestUpdateDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
@@ -106,7 +109,7 @@ public class TeamService {
         Team updatedTeam = teamRepository.save(team);
         return modelMapper.map(updatedTeam, TeamResponseDTO.class);
     }
-
+    @BusinessActivityLog(action = "Update Team Member Role")
     @Transactional
     public TeamMemberResponseDTO updateMemberRole(Long teamId, Long userIdToUpdate, UpdateMemberRoleTeamRequestDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
@@ -155,6 +158,7 @@ public class TeamService {
         return pagedResponseMapper.toPagedResponse(teamMemberResponseDTOPage, TeamMemberResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Invite Member to Team")
     @Transactional
     public void inviteMember(Long teamId, InvitedMemberRequestDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
@@ -175,6 +179,7 @@ public class TeamService {
         emailService.sendTeamInvitationEmail(userToInvite.getEmail(), team.getName(), token);
     }
 
+    @BusinessActivityLog(action = "Accept Team Invitation via Email")
     @Transactional
     public void acceptInvitation(String token) {
         if (token == null || token.isEmpty()) {
@@ -191,7 +196,7 @@ public class TeamService {
         teamMemberRepository.save(membership);
     }
 
-
+    @BusinessActivityLog(action = "Generate Team Invitation Link")
     @Transactional
     public InviteLinkResponseDTO generateTeamInviteToken(Long teamID, User actingUser) {
         Team team = findTeamByIdOrThrow(teamID);
@@ -206,6 +211,7 @@ public class TeamService {
             team.getInvitationTokenExpiry());
     }
 
+    @BusinessActivityLog(action = "Accept Team Invitation via Link")
     @Transactional
     public TeamMemberResponseDTO acceptTeamInvitationLink(String token, User actingUser) {
         if (token == null || token.isEmpty()) {
@@ -226,6 +232,7 @@ public class TeamService {
         return toTeamMemberResponseDTO(newMember);
     }
 
+    @BusinessActivityLog(action = "Delete Team")
     @Transactional
     public void deleteTeam(Long teamId, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
@@ -233,6 +240,7 @@ public class TeamService {
         teamRepository.delete(team);
     }
 
+    @BusinessActivityLog(action = "Remove Member from Team")
     @Transactional
     public void deleteMembershipFromTeam(Long teamId, Long userIdToDelete, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);

@@ -3,6 +3,7 @@ package br.com.teamtacles.task.service;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
+import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
@@ -71,6 +72,7 @@ public class TaskService {
         this.pagedResponseMapper = pagedResponseMapper;
     }
 
+    @BusinessActivityLog(action = "Create Task")
     @Transactional
     public TaskResponseDTO createTask(Long projectId, TaskRequestRegisterDTO taskDto, User actingUser) {
         Project project = projectService.findProjectEntityById(projectId);
@@ -87,6 +89,7 @@ public class TaskService {
         return modelMapper.map(savedTask, TaskResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Update Task Status")
     @Transactional
     public TaskResponseDTO updateTaskStatus(Long projectId, Long taskId, UpdateTaskStatusRequestDTO updateStatusDTO, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
@@ -115,6 +118,7 @@ public class TaskService {
         return pagedResponseMapper.toPagedResponse(taskResponseDTOPage, TaskResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Assign Users to Task")
     @Transactional
     public TaskResponseDTO assignUsersToTask(Long projectId, Long taskId, Set<TaskAssignmentRequestDTO> assignmentsDTO, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
@@ -150,6 +154,7 @@ public class TaskService {
         return modelMapper.map(updatedTask, TaskResponseDTO.class);
     }
 
+    @BusinessActivityLog(action = "Remove Users from Task")
     @Transactional
     public void removeUsersFromTask(Long projectId, Long taskId, Set<Long> userIdsToRemove, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
@@ -161,6 +166,7 @@ public class TaskService {
 
         taskAssignmentRepository.deleteAllByTaskIdAndUserIds(taskId, userIdsToRemove);
     }
+    @BusinessActivityLog(action = "Delete Task")
 
     @Transactional
     public void deleteTaskById(Long projectId, Long taskId, User actingUser) {
@@ -169,6 +175,7 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
+    @BusinessActivityLog(action = "Update Task Details")
     @Transactional
     public TaskResponseDTO updateTaskDetails(Long projectId, Long taskId, TaskRequestUpdateDTO taskUpdateDTO, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
