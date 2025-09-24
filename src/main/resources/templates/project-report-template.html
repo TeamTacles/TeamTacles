@@ -4,8 +4,7 @@
     <meta charset="UTF-8"/>
     <title>Relatório do Projeto</title>
     <style>
-        /* Seus estilos CSS permanecem os mesmos */
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
         /* Estilos Globais */
         body, html {
@@ -18,6 +17,8 @@
         }
         .page-container {
             width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 40px;
             box-sizing: border-box;
         }
@@ -29,11 +30,14 @@
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
-        .header-table .logo {
-            width: 80px; /* Logo com tamanho ajustado */
+        .header-logo-cell {
+            width: 70px;
+        }
+        .logo {
+            width: 80px;
             height: auto;
         }
-        .header-table .project-title {
+        .project-title {
             font-size: 28px;
             font-weight: 700;
             text-align: right;
@@ -78,20 +82,20 @@
             width: 25%;
             padding: 15px 10px;
         }
-        .summary-box .count {
+        .summary-count {
             display: block;
             font-size: 28px;
             font-weight: 700;
         }
-        .summary-box .label {
+        .summary-label {
             font-size: 11px;
             color: #7f8c8d;
             text-transform: uppercase;
         }
-        .summary-box .done { color: #2ecc71; }
-        .summary-box .in-progress { color: #3498db; }
-        .summary-box .todo { color: #f1c40f; }
-        .summary-box .overdue { color: #e74c3c; }
+        .summary-done { color: #2ecc71; }
+        .summary-in-progress { color: #3498db; }
+        .summary-todo { color: #f1c40f; }
+        .summary-overdue { color: #e74c3c; }
 
         /* --- Tabelas de Dados --- */
         .data-table {
@@ -118,6 +122,45 @@
             border-bottom: none;
         }
 
+        /* --- ESTILOS DA TASK --- */
+        .task-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid; /* A cor será definida pela classe de status */
+            border-radius: 8px;
+        }
+        .task-title {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .task-container-layout {
+            display: table;
+            width: 100%;
+        }
+        .task-section {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .description-section {
+            width: 60%;
+        }
+        .date-section {
+            width: 40%;
+        }
+        .vertical-divider {
+            display: table-cell;
+            width: 20px;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        /* Cores da Borda por Status da Task */
+        .border-done { border-color: #2ecc71; }
+        .border-in-progress { border-color: #3498db; }
+        .border-todo { border-color: #f1c40f; }
+        .border-overdue { border-color: #e74c3c; }
+        .border-default { border-color: #ecf0f1; }
+
         /* --- Rodapé --- */
         .footer {
             text-align: center;
@@ -134,12 +177,29 @@
 <div class="page-container">
     <table class="header-table">
         <tr>
-            <td style="width: 70px;"><img th:src="${logoUrl}" alt="Logo" class="logo"/></td>
+            <td class="header-logo-cell">
+                <img th:src="${logoUrl}" alt="Logo" class="logo"/>
+            </td>
             <td>
                 <div class="project-title" th:text="${project.title}">Nome do Projeto</div>
                 <div class="meta-info">
                     <strong>Criado em:</strong> <span th:text="${#temporals.format(project.createdAt, 'dd/MM/yyyy')}">Data</span> |
                     <strong>Dono:</strong> <span th:text="${project.owner.username}">Dono</span>
+                </div>
+                <div th:if="${taskFilter != null}" class="meta-info">
+                    <strong>Filtros:</strong>
+                    <span th:if="${taskFilter.status != null}">
+                        Estado =
+                        <span th:switch="${#strings.toString(taskFilter.status)}">
+                            <span th:case="'DONE'">Concluído</span>
+                            <span th:case="'IN_PROGRESS'">Em Progresso</span>
+                            <span th:case="'TO_DO'">A Fazer</span>
+                            <span th:case="'OVERDUE'">Atrasado</span>
+                            <span th:case="*">N/A</span>
+                        </span>
+                    </span>
+                    <span th:if="${taskFilter.updatedAtAfter != null}" th:text="' De: ' + ${#temporals.format(taskFilter.updatedAtAfter, 'dd/MM/yyyy')}"></span>
+                    <span th:if="${taskFilter.updatedAtBefore != null}" th:text="' Até: ' + ${#temporals.format(taskFilter.updatedAtBefore, 'dd/MM/yyyy')}"></span>
                 </div>
             </td>
         </tr>
@@ -154,20 +214,20 @@
     <table class="summary-table">
         <tr>
             <td class="summary-box">
-                <span class="count done" th:text="${summary.doneCount}">0</span>
-                <span class="label">Concluídas</span>
+                <span class="summary-count summary-done" th:text="${summary.doneCount}">0</span>
+                <span class="summary-label">Concluídas</span>
             </td>
             <td class="summary-box">
-                <span class="count in-progress" th:text="${summary.inProgressCount}">0</span>
-                <span class="label">Em Progresso</span>
+                <span class="summary-count summary-in-progress" th:text="${summary.inProgressCount}">0</span>
+                <span class="summary-label">Em Progresso</span>
             </td>
             <td class="summary-box">
-                <span class="count todo" th:text="${summary.toDoCount}">0</span>
-                <span class="label">A Fazer</span>
+                <span class="summary-count summary-todo" th:text="${summary.toDoCount}">0</span>
+                <span class="summary-label">A Fazer</span>
             </td>
             <td class="summary-box">
-                <span class="count overdue" th:text="${summary.overdueCount}">0</span>
-                <span class="label">Atrasadas</span>
+                <span class="summary-count summary-overdue" th:text="${summary.overdueCount}">0</span>
+                <span class="summary-label">Atrasadas</span>
             </td>
         </tr>
     </table>
@@ -187,34 +247,78 @@
         <tr th:each="member : ${project.members}">
             <td th:text="${member.user.username}">username</td>
             <td th:text="${member.user.email}">email</td>
-            <td th:text="${member.projectRole}">role</td>
+            <td>
+                <span th:switch="${#strings.toString(member.projectRole)}">
+                    <span th:case="'OWNER'">Dono</span>
+                    <span th:case="'ADMIN'">Administrador</span>
+                    <span th:case="'MEMBER'">Membro</span>
+                    <span th:case="'VIEWER'">Visualizador</span>
+                    <span th:case="*">N/A</span>
+                </span>
+            </td>
         </tr>
         </tbody>
     </table>
 
-    <div th:if="${not #lists.isEmpty(tasks)}"> <hr/>
-        <div class="section-title">Tarefas</div>
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>Título</th>
-                <th>Status</th>
-                <th>Data de Entrega</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="task : ${tasks}">
-                <td th:text="${task.title}">Título da Tarefa</td>
-                <td th:text="${task.status}">Status</td>
-                <td th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</td>
-            </tr>
-            </tbody>
-        </table>
+    <hr/>
+
+    <div class="section-title">Tarefas</div>
+    <div th:each="task : ${tasks}">
+        <div th:replace="~{:: taskCard(task=${task})}"></div>
     </div>
 
     <div class="footer">
-        Relatório gerado por TeamTacles em <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+        Relatório gerado por TeamTacles em <span th:text="${#temporals.format(generationDate, 'dd/MM/yyyy HH:mm')}"></span>
     </div>
 </div>
+
+<div th:fragment="taskCard(task)" th:with="statusStr=${#strings.toString(task.status)}">
+    <div th:switch="${statusStr}">
+        <div th:case="'DONE'" class="task-card border-done">
+            <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
+        </div>
+        <div th:case="'IN_PROGRESS'" class="task-card border-in-progress">
+            <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
+        </div>
+        <div th:case="'TO_DO'" class="task-card border-todo">
+            <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
+        </div>
+        <div th:case="'OVERDUE'" class="task-card border-overdue">
+            <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
+        </div>
+        <div th:case="*" class="task-card border-default">
+            <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="taskContent(task, statusStr)">
+    <h3 class="task-title" th:text="${task.title}">Título da Tarefa</h3>
+    <div class="task-container-layout">
+        <div class="task-section description-section">
+            <p><strong>Responsáveis:</strong>
+                <span th:each="assignments, iterStat : ${task.assignments}" th:text="${assignments.user.username} + (${iterStat.last} ? '' : ', ')"></span>
+            </p>
+            <p><strong>Descrição:</strong>
+                <span th:text="${task.description}">Descrição da Tarefa</span>
+            </p>
+        </div>
+        <div class="vertical-divider"></div>
+        <div class="task-section date-section">
+            <p><strong>Status:</strong>
+                <span th:switch="${statusStr}">
+                    <span th:case="'DONE'">Concluído</span>
+                    <span th:case="'IN_PROGRESS'">Em Progresso</span>
+                    <span th:case="'TO_DO'">A Fazer</span>
+                    <span th:case="'OVERDUE'">Atrasado</span>
+                    <span th:case="*">N/A</span>
+                </span>
+            </p>
+            <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</span></p>
+            <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy') : '-----'}">Data</span></p>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

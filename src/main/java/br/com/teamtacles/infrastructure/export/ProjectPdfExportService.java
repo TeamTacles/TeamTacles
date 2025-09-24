@@ -19,6 +19,7 @@ import org.thymeleaf.context.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Set;
 
@@ -38,14 +39,14 @@ public class ProjectPdfExportService {
         Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
         TaskSummaryDTO summary = projectService.calculateTaskSummary(tasks);
 
-        byte[] pdfContent = export(project, summary, tasks);
+        byte[] pdfContent = export(project, summary, tasks, taskFilter);
 
         String filename = ReportFileNameGenerator.gerenateForProject(project);
 
         return new PdfExportResult(pdfContent, filename);
     }
 
-    public byte[] export(Project project, TaskSummaryDTO summary, Set<Task> tasks) {
+    public byte[] export(Project project, TaskSummaryDTO summary, Set<Task> tasks, TaskFilterReportDTO taskFilter) {
         try {
 
             String logoDataUri = loadLogoAsBase64("static/images/logo.png");
@@ -54,7 +55,9 @@ public class ProjectPdfExportService {
             context.setVariable("project", project);
             context.setVariable("summary", summary);
             context.setVariable("tasks", tasks);
+            context.setVariable("taskFilter", taskFilter);
             context.setVariable("logoUrl", logoDataUri);
+            context.setVariable("generationDate", LocalDateTime.now());
 
             String html = templateEngine.process("project-report-template", context);
 
