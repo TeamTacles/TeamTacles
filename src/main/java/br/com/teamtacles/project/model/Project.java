@@ -1,7 +1,6 @@
 package br.com.teamtacles.project.model;
 
 import br.com.teamtacles.task.model.Task;
-import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -58,6 +57,7 @@ public class Project {
     public void addMember(ProjectMember member) {
         this.members.add(member);
         member.setProject(this);
+
     }
 
     public void removeMember(ProjectMember member) {

@@ -114,6 +114,7 @@ public class ProjectService {
         return modelMapper.map(savedProject, ProjectResponseDTO.class);
     }
 
+
     @BusinessActivityLog(action = "Update Project")
     @Transactional
     public ProjectResponseDTO updateProject(Long projectId, ProjectRequestUpdateDTO requestDTO, User actingUser) {

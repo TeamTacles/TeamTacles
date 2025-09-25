@@ -1,8 +1,12 @@
 package br.com.teamtacles.project.dto.request;
 
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class ProjectRequestUpdateDTO {
 

@@ -1,5 +1,10 @@
 package br.com.teamtacles.utils;
 
+import br.com.teamtacles.project.dto.request.InviteProjectMemberRequestDTO;
+import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
+import br.com.teamtacles.project.enumeration.EProjectRole;
+import br.com.teamtacles.project.model.Project;
+import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
@@ -117,4 +122,41 @@ public class TestDataFactory {
         dto.setNewRole(newRole);
         return dto;
     }
+
+    public static Project createMockProject(User owner) {
+        Project project = new Project();
+        try {
+            Field idField = Project.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            ReflectionUtils.setField(idField, project, 100L);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set ID on Project mock", e);
+        }
+        project.setTitle("Mock Project");
+        project.setDescription("A mock project for testing purposes.");
+        project.setOwner(owner);
+
+        ProjectMember ownerMembership = new ProjectMember(owner, project, EProjectRole.OWNER);
+        ownerMembership.setAcceptedInvite(true);
+
+        try {
+            Field memberIdField = ProjectMember.class.getDeclaredField("id");
+            memberIdField.setAccessible(true);
+            ReflectionUtils.setField(memberIdField, ownerMembership, 999L);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set ID on ProjectMember mock", e);
+        }
+        project.addMember(ownerMembership);
+        return project;
+    }
+    public static ProjectRequestUpdateDTO createProjectRequestUpdateDTO() {
+        return new ProjectRequestUpdateDTO("Updated Project Title", "Updated Description");
+    }
+    public static InviteProjectMemberRequestDTO createInviteProjectMemberRequestDTO(String email, EProjectRole role) {
+        InviteProjectMemberRequestDTO dto = new InviteProjectMemberRequestDTO();
+        dto.setEmail(email);
+        dto.setRole(role);
+        return dto;
+    }
+
 }
