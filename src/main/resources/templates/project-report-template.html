@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <title>Relatório do Projeto</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap');
 
         /* Estilos Globais */
         body, html {
@@ -128,9 +128,11 @@
             padding: 15px;
             border: 1px solid; /* A cor será definida pela classe de status */
             border-radius: 8px;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         .task-title {
-            font-size: 16px;
+            font-size: 20px;
             margin-top: 0;
             margin-bottom: 15px;
         }
@@ -146,12 +148,13 @@
             width: 60%;
         }
         .date-section {
-            width: 40%;
+            width: 50%;
         }
         .vertical-divider {
-            display: table-cell;
             width: 20px;
-            border-right: 1px solid #e0e0e0;
+            height: 45px;
+            border-right: 2px solid #e0e0e0;
+            margin: 20px 20px;
         }
 
         /* Cores da Borda por Status da Task */
@@ -187,19 +190,21 @@
                     <strong>Dono:</strong> <span th:text="${project.owner.username}">Dono</span>
                 </div>
                 <div th:if="${taskFilter != null}" class="meta-info">
-                    <strong>Filtros:</strong>
-                    <span th:if="${taskFilter.status != null}">
-                        Estado =
-                        <span th:switch="${#strings.toString(taskFilter.status)}">
-                            <span th:case="'DONE'">Concluído</span>
-                            <span th:case="'IN_PROGRESS'">Em Progresso</span>
-                            <span th:case="'TO_DO'">A Fazer</span>
-                            <span th:case="'OVERDUE'">Atrasado</span>
-                            <span th:case="*">N/A</span>
+                    <th:block th:if="${taskFilter.status != null or taskFilter.updatedAtAfter != null or taskFilter.updatedAtBefore != null}">
+                        <strong>Filtros:</strong>
+                        <span th:if="${taskFilter.status != null}">
+                            Estado =
+                            <span th:switch="${taskFilter.status.name()}">
+                                <span th:case="'DONE'">Concluído</span>
+                                <span th:case="'IN_PROGRESS'">Em Progresso</span>
+                                <span th:case="'TO_DO'">A Fazer</span>
+                                <span th:case="'OVERDUE'">Atrasado</span>
+                                <span th:case="*">N/A</span>
+                            </span>
                         </span>
-                    </span>
-                    <span th:if="${taskFilter.updatedAtAfter != null}" th:text="' De: ' + ${#temporals.format(taskFilter.updatedAtAfter, 'dd/MM/yyyy')}"></span>
-                    <span th:if="${taskFilter.updatedAtBefore != null}" th:text="' Até: ' + ${#temporals.format(taskFilter.updatedAtBefore, 'dd/MM/yyyy')}"></span>
+                        <span th:if="${taskFilter.updatedAtAfter != null}" th:text="' De: ' + ${#temporals.format(taskFilter.updatedAtAfter, 'dd/MM/yyyy')}"></span>
+                        <span th:if="${taskFilter.updatedAtBefore != null}" th:text="' Até: ' + ${#temporals.format(taskFilter.updatedAtBefore, 'dd/MM/yyyy')}"></span>
+                    </th:block>
                 </div>
             </td>
         </tr>
@@ -248,12 +253,10 @@
             <td th:text="${member.user.username}">username</td>
             <td th:text="${member.user.email}">email</td>
             <td>
-                <span th:switch="${#strings.toString(member.projectRole)}">
+                <span th:switch="${member.projectRole.name()}">
                     <span th:case="'OWNER'">Dono</span>
                     <span th:case="'ADMIN'">Administrador</span>
                     <span th:case="'MEMBER'">Membro</span>
-                    <span th:case="'VIEWER'">Visualizador</span>
-                    <span th:case="*">N/A</span>
                 </span>
             </td>
         </tr>
@@ -264,15 +267,18 @@
 
     <div class="section-title">Tarefas</div>
     <div th:each="task : ${tasks}">
-        <div th:replace="~{:: taskCard(task=${task})}"></div>
+        <div th:if="${task != null}">
+            <div th:replace="~{:: taskCard(task=${task})}"></div>
+        </div>
     </div>
+
 
     <div class="footer">
         Relatório gerado por TeamTacles em <span th:text="${#temporals.format(generationDate, 'dd/MM/yyyy HH:mm')}"></span>
     </div>
 </div>
 
-<div th:fragment="taskCard(task)" th:with="statusStr=${#strings.toString(task.status)}">
+<div th:fragment="taskCard(task)" th:with="statusStr=${(task != null and task.status != null) ? task.status.name() : 'DEFAULT'}">
     <div th:switch="${statusStr}">
         <div th:case="'DONE'" class="task-card border-done">
             <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
@@ -293,29 +299,31 @@
 </div>
 
 <div th:fragment="taskContent(task, statusStr)">
-    <h3 class="task-title" th:text="${task.title}">Título da Tarefa</h3>
-    <div class="task-container-layout">
-        <div class="task-section description-section">
-            <p><strong>Responsáveis:</strong>
-                <span th:each="assignments, iterStat : ${task.assignments}" th:text="${assignments.user.username} + (${iterStat.last} ? '' : ', ')"></span>
-            </p>
-            <p><strong>Descrição:</strong>
-                <span th:text="${task.description}">Descrição da Tarefa</span>
-            </p>
-        </div>
-        <div class="vertical-divider"></div>
-        <div class="task-section date-section">
-            <p><strong>Status:</strong>
-                <span th:switch="${statusStr}">
-                    <span th:case="'DONE'">Concluído</span>
-                    <span th:case="'IN_PROGRESS'">Em Progresso</span>
-                    <span th:case="'TO_DO'">A Fazer</span>
-                    <span th:case="'OVERDUE'">Atrasado</span>
-                    <span th:case="*">N/A</span>
-                </span>
-            </p>
-            <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</span></p>
-            <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy') : '-----'}">Data</span></p>
+    <div th:if="${task != null}">
+        <h3 class="task-title" th:text="${task.title}">Título da Tarefa</h3>
+        <div class="task-container-layout">
+            <div class="task-section description-section">
+                <p><strong>Responsáveis:</strong>
+                    <span th:if="${task.assignments != null}" th:each="assignment, iterStat : ${task.assignments}" th:text="${assignment.user.username} + (${iterStat.last} ? '' : ', ')"></span>
+                </p>
+                <p><strong>Descrição:</strong>
+                    <span th:text="${task.description}">Descrição da Tarefa</span>
+                </p>
+            </div>
+            <div class="vertical-divider"></div>
+            <div class="task-section date-section">
+                <p><strong>Status:</strong>
+                    <span th:switch="${statusStr}">
+                        <span th:case="'DONE'">Concluído</span>
+                        <span th:case="'IN_PROGRESS'">Em Progresso</span>
+                        <span th:case="'TO_DO'">A Fazer</span>
+                        <span th:case="'OVERDUE'">Atrasado</span>
+                        <span th:case="*">N/A</span>
+                    </span>
+                </p>
+                <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</span></p>
+                <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy') : '-----'}">Data</span></p>
+            </div>
         </div>
     </div>
 </div>
