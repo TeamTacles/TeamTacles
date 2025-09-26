@@ -38,18 +38,18 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
+
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword("encodedPassword123");
-        user.setEnabled(true);
+        user.definePassword("encodedPassword123");
+        user.confirmAccountVerification();
         return user;
     }
 
     public static User createUnverifiedUser() {
         User user = createValidUser();
-        user.setEnabled(false);
-        user.setVerificationToken("valid-token-123");
-        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(1));
+        user.disableAccount();
+        user.assignVerificationToken("valid-token-123", LocalDateTime.now().plusHours(1));
         return user;
     }
 

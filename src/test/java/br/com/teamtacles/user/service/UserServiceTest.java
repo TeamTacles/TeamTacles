@@ -9,10 +9,7 @@ import br.com.teamtacles.user.model.Role;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
-import br.com.teamtacles.user.validator.NewPasswordValidator;
-import br.com.teamtacles.user.validator.PasswordMatchValidator;
-import br.com.teamtacles.user.validator.UserTokenValidator;
-import br.com.teamtacles.user.validator.UserUniquenessValidator;
+import br.com.teamtacles.user.validator.*;
 import br.com.teamtacles.utils.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,6 +54,8 @@ public class UserServiceTest {
     private EmailService emailService;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private PasswordUpdateValidator passwordUpdateValidator;
     @InjectMocks
     private UserService userService;
 
@@ -244,11 +243,14 @@ public class UserServiceTest {
         void shouldUpdateUsernameAndEmail_WhenDataIsValid() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO("newUsername", "new@email.com", null, null);
-            when(userRepository.existsByUsername("newUsername")).thenReturn(false);
-            when(userRepository.existsByEmail("new@email.com")).thenReturn(false);
+
+            doNothing().when(userUniquenessValidator).validate(any(UserRequestUpdateDTO.class), anyLong());
+            doNothing().when(passwordUpdateValidator).validate(any(UserRequestUpdateDTO.class), any(User.class));
+
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
                     .thenReturn(new UserResponseDTO(existingUser.getId(), updateDTO.getUsername(), updateDTO.getEmail()));
+
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
             // When
@@ -266,8 +268,10 @@ public class UserServiceTest {
         void shouldUpdatePassword_WhenNewPasswordAndConfirmationAreValid() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "newPassword123", "newPassword123");
-            doNothing().when(passwordMatchValidator).validate("newPassword123", "newPassword123");
-            doNothing().when(newPasswordValidator).validate("newPassword123", existingUser.getPassword());
+
+            doNothing().when(userUniquenessValidator).validate(any(UserRequestUpdateDTO.class), anyLong());
+            doNothing().when(passwordUpdateValidator).validate(any(UserRequestUpdateDTO.class), any(User.class));
+
             when(passwordEncoder.encode("newPassword123")).thenReturn("encodedNewPassword");
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -285,7 +289,10 @@ public class UserServiceTest {
         void shouldThrowException_WhenUpdatingToAnExistingUsername() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO("existingUsername", null, null, null);
-            when(userRepository.existsByUsername("existingUsername")).thenReturn(true);
+
+            doThrow(new UsernameAlreadyExistsException("Username already exists"))
+                    .when(userUniquenessValidator)
+                    .validate(updateDTO, existingUser.getId());
 
             // When & Then
             assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
@@ -299,9 +306,10 @@ public class UserServiceTest {
         void shouldThrowException_WhenUpdatingPasswordButConfirmationDoesNotMatch() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "newPassword123", "wrongConfirmation");
+
             doThrow(new PasswordMismatchException("Passwords do not match"))
-                    .when(passwordMatchValidator)
-                    .validate("newPassword123", "wrongConfirmation");
+                    .when(passwordUpdateValidator)
+                    .validate(updateDTO, existingUser);
 
             // When & Then
             assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
@@ -315,10 +323,10 @@ public class UserServiceTest {
         void shouldThrowException_WhenNewPasswordIsSameAsCurrentPassword() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, null, "currentPassword", "currentPassword");
-            doNothing().when(passwordMatchValidator).validate("currentPassword", "currentPassword");
+
             doThrow(new SameAsCurrentPasswordException("New password cannot be the same as the current one."))
-                    .when(newPasswordValidator)
-                    .validate("currentPassword", existingUser.getPassword());
+                    .when(passwordUpdateValidator)
+                    .validate(updateDTO, existingUser);
 
             // When & Then
             assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
@@ -332,7 +340,10 @@ public class UserServiceTest {
         void shouldThrowException_WhenUpdatingToAnExistingEmail() {
             // Given
             UserRequestUpdateDTO updateDTO = new UserRequestUpdateDTO(null, "existing@email.com", null, null);
-            when(userRepository.existsByEmail("existing@email.com")).thenReturn(true);
+
+            doThrow(new EmailAlreadyExistsException("Email already exists"))
+                    .when(userUniquenessValidator)
+                    .validate(updateDTO, existingUser.getId());
 
             // When & Then
             assertThatThrownBy(() -> userService.updateUser(updateDTO, existingUser))
@@ -352,8 +363,7 @@ public class UserServiceTest {
         void shouldResetPasswordSuccessfully_WhenTokenIsValid() {
             // Given
             User user = TestDataFactory.createValidUser();
-            user.setResetPasswordToken("valid-token");
-            user.setResetPasswordTokenExpiry(LocalDateTime.now().plusHours(1));
+            user.assignPasswordResetToken("valid-token", LocalDateTime.now().plusHours(1));
             String newPassword = "newSecurePassword123";
 
             when(userRepository.findByResetPasswordToken("valid-token")).thenReturn(Optional.of(user));

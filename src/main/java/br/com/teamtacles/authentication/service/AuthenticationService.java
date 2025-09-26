@@ -39,8 +39,7 @@ public class AuthenticationService {
             String token = UUID.randomUUID().toString();
             LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
 
-            user.setResetPasswordToken(token);
-            user.setResetPasswordTokenExpiry(expiryDate);
+            user.assignVerificationToken(token, LocalDateTime.now().plusHours(1));
 
             userRepository.save(user);
 

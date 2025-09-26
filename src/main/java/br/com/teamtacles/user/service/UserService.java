@@ -11,10 +11,7 @@ import br.com.teamtacles.user.model.Role;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
-import br.com.teamtacles.user.validator.NewPasswordValidator;
-import br.com.teamtacles.user.validator.PasswordMatchValidator;
-import br.com.teamtacles.user.validator.UserTokenValidator;
-import br.com.teamtacles.user.validator.UserUniquenessValidator;
+import br.com.teamtacles.user.validator.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +31,7 @@ public class UserService {
     private final NewPasswordValidator newPasswordValidator;
     private final PasswordMatchValidator passwordMatchValidator;
     private final UserUniquenessValidator userUniquenessValidator;
+    private final PasswordUpdateValidator passwordUpdateValidator;
 
     private final EmailService emailService;
 
@@ -44,7 +42,8 @@ public class UserService {
                        PasswordMatchValidator passwordMatchValidator, EmailService emailService,
                        UserUniquenessValidator userUniquenessValidator,
                        UserTokenValidator userTokenValidator,
-                       NewPasswordValidator newPasswordValidator) {
+                       NewPasswordValidator newPasswordValidator,
+                       PasswordUpdateValidator passwordUpdateValidator) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -54,6 +53,7 @@ public class UserService {
         this.userUniquenessValidator = userUniquenessValidator;
         this.userTokenValidator = userTokenValidator;
         this.newPasswordValidator = newPasswordValidator;
+        this.passwordUpdateValidator = passwordUpdateValidator;
     }
 
     @BusinessActivityLog(action = "Create User Account")
@@ -68,45 +68,38 @@ public class UserService {
         User user = new User();
         user.setUsername(registerDTO.getUsername());
         user.setEmail(registerDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
-
-        user.setRoles(Set.of(userRole));
+        user.definePassword(passwordEncoder.encode(registerDTO.getPassword()));
+        user.addRole(userRole);
 
         String token = UUID.randomUUID().toString();
-        user.setVerificationToken(token);
-        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(1));
-        user.setEnabled(false);
+        user.assignVerificationToken(token, LocalDateTime.now().plusHours(1));
 
         User savedUser = userRepository.save(user);
         emailService.sendVerificationEmail(savedUser.getEmail(), token);
 
         return modelMapper.map(savedUser, UserResponseDTO.class);
     }
+
     @BusinessActivityLog(action = "Update User Profile")
     @Transactional
     public UserResponseDTO updateUser(UserRequestUpdateDTO userRequestDTO, User user) {
-        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank() && !userRequestDTO.getUsername().equals(user.getUsername())) {
-            if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
-                throw new UsernameAlreadyExistsException("Username '" + userRequestDTO.getUsername() + "' already exists.");
-            }
+        userUniquenessValidator.validate(userRequestDTO, user.getId());
+        passwordUpdateValidator.validate(userRequestDTO, user);
+
+        if (userRequestDTO.getUsername() != null && !userRequestDTO.getUsername().isBlank()) {
             user.setUsername(userRequestDTO.getUsername());
         }
 
-        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank() && !userRequestDTO.getEmail().equals(user.getEmail())) {
-            if (userRepository.existsByEmail(userRequestDTO.getEmail())) {
-                throw new EmailAlreadyExistsException("Email '" + userRequestDTO.getEmail() + "' already exists.");
-            }
+        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
             user.setEmail(userRequestDTO.getEmail());
         }
 
-        handlePasswordUpdate(userRequestDTO, user);
+        if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isBlank()) {
+            user.updatePassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        }
 
         User updatedUser = userRepository.save(user);
         return modelMapper.map(updatedUser, UserResponseDTO.class);
-    }
-    
-    public UserResponseDTO getUserById(User user) {
-        return modelMapper.map(user, UserResponseDTO.class);
     }
 
     @BusinessActivityLog(action = "Reset User Password")
@@ -119,9 +112,7 @@ public class UserService {
         userTokenValidator.validatePasswordResetToken(user);
         newPasswordValidator.validate(newPassword, user.getPassword());
 
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetPasswordToken(null);
-        user.setResetPasswordTokenExpiry(null);
+        user.updatePassword(passwordEncoder.encode(newPassword));
 
         userRepository.save(user);
     }
@@ -132,12 +123,11 @@ public class UserService {
         User user = findByVerificationTokenOrThrow(token);
         userTokenValidator.validateVerificationToken(user);
 
-        user.setEnabled(true);
-        user.setVerificationToken(null);
-        user.setVerificationTokenExpiry(null);
+        user.confirmAccountVerification();
 
         userRepository.save(user);
     }
+
     @BusinessActivityLog(action = "Resend Verification Email")
     @Transactional
     public void resendVerificationEmail(String email) {
@@ -145,37 +135,22 @@ public class UserService {
             if (!user.isEnabled()) {
 
                 String token = UUID.randomUUID().toString();
-                user.setVerificationToken(token);
-                user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+                user.assignVerificationToken(token, LocalDateTime.now().plusHours(24));
 
                 userRepository.save(user);
                 emailService.sendVerificationEmail(user.getEmail(), token);
             }
         });
     }
+    
+    public UserResponseDTO getUserById(User user) {
+        return modelMapper.map(user, UserResponseDTO.class);
+    }
+
     @BusinessActivityLog(action = "Delete User Account")
     @Transactional
     public void deleteUser(User user) {
         userRepository.delete(user);
-    }
-
-    private void handlePasswordUpdate(UserRequestUpdateDTO userRequestDTO, User user) {
-        String newPassword = userRequestDTO.getPassword();
-        String passwordConfirm = userRequestDTO.getPasswordConfirm();
-
-        if ((newPassword != null && !newPassword.isBlank()) ||
-                (passwordConfirm != null && !passwordConfirm.isBlank()))  {
-
-            if (newPassword == null || newPassword.isBlank() ||
-                    passwordConfirm == null || passwordConfirm.isBlank()) {
-                throw new IllegalArgumentException("To change the password, you must provide both the new password and its confirmation.");
-            }
-
-            passwordMatchValidator.validate(newPassword, passwordConfirm);
-            newPasswordValidator.validate(newPassword, user.getPassword());
-
-            user.setPassword(passwordEncoder.encode(newPassword));
-        }
     }
 
     public User findUserEntityById(Long userId) {

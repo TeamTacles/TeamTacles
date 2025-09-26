@@ -15,7 +15,6 @@ import java.util.Set;
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @ToString(exclude = {"password", "roles", "teamMemberships", "projectMemberships", "taskAssignments"})
 @EqualsAndHashCode(of = "id")
@@ -25,26 +24,29 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     private Long id;
 
+    @Setter
     @Size(min = 3, max = 50)
     @NotBlank(message="The username  cannot be blank")
     private String username;
 
+    @Setter
     @Email(message = "The email must be valid")
     @Size(min = 8, max = 50)
     private String email;
 
+    @Setter(AccessLevel.PRIVATE)
     @Size(min = 5, max = 100)
     @NotBlank(message="The password cannot be blank")
     private String password;
 
     private String resetPasswordToken;
-
     private LocalDateTime resetPasswordTokenExpiry;
+    private String verificationToken;
+    private LocalDateTime verificationTokenExpiry;
+    private boolean enabled = false;
 
-    @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -60,19 +62,50 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TaskAssignment> taskAssignments = new HashSet<>();
 
-    private String verificationToken;
-
-    private LocalDateTime verificationTokenExpiry;
-
-    private boolean enabled = false;
-
     @PrePersist
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();
     }
 
+    public void definePassword(String password) {
+        this.setPassword(password);
+    }
+
     public void updatePassword(String newPassword) {
-        this.password = newPassword;
+        this.setPassword(newPassword);
+        this.resetPasswordToken = null;
+        this.resetPasswordTokenExpiry = null;
+    }
+
+    public void confirmAccountVerification() {
+        if(this.enabled){
+            return;
+        }
+
+        this.enabled = true;
+        this.verificationToken = null;
+        this.verificationTokenExpiry = null;
+    }
+
+    public void disableAccount() {
+        this.enabled = false;
+    }
+
+    public void assignVerificationToken(String token, LocalDateTime expiryDate) {
+        this.verificationToken = token;
+        this.verificationTokenExpiry = expiryDate;
+    }
+
+    public void assignPasswordResetToken(String token, LocalDateTime expiryDate) {
+        this.resetPasswordToken = token;
+        this.resetPasswordTokenExpiry = expiryDate;
+    }
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+    public void removeRole(Role role) {
+        this.roles.remove(role);
     }
 }
 
