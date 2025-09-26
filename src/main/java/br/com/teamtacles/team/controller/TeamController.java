@@ -44,12 +44,6 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @GetMapping("/accept-invite")
-    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
-        teamService.acceptInvitation(token);
-        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
-    }
-
     @PostMapping("/{teamId}/invite-link")
     public ResponseEntity<InviteLinkResponseDTO> generateInvitedLink(
             @PathVariable Long teamId,
@@ -64,6 +58,12 @@ public class TeamController {
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         TeamMemberResponseDTO teamMemberDTO = teamService.acceptTeamInvitationLink(token, authenticatedUser.getUser());
         return ResponseEntity.ok(teamMemberDTO);
+    }
+
+    @GetMapping("/accept-invite")
+    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
+        teamService.acceptInvitation(token);
+        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
     }
 
     @GetMapping
@@ -127,5 +127,4 @@ public class TeamController {
         teamService.deleteMembershipFromTeam(teamId, userId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
-
 }

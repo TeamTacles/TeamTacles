@@ -77,11 +77,10 @@ public class TeamService {
     public TeamResponseDTO createTeam(TeamRequestRegisterDTO dto, User actingUser) {
         teamNameUniquenessValidator.validate(dto.getName(), actingUser);
 
-        Team newTeam = modelMapper.map(dto, Team.class);
-        newTeam.setOwner(actingUser);
+        Team newTeam = new Team(dto.getName(), dto.getDescription(), actingUser);
 
         TeamMember creatorMembership = new TeamMember(actingUser, newTeam, ETeamRole.OWNER);
-        creatorMembership.setAcceptedInvite(true);
+        creatorMembership.acceptedInvitation();
         newTeam.addMember(creatorMembership);
 
         Team savedTeam = teamRepository.save(newTeam);
@@ -109,6 +108,7 @@ public class TeamService {
         Team updatedTeam = teamRepository.save(team);
         return modelMapper.map(updatedTeam, TeamResponseDTO.class);
     }
+
     @BusinessActivityLog(action = "Update Team Member Role")
     @Transactional
     public TeamMemberResponseDTO updateMemberRole(Long teamId, Long userIdToUpdate, UpdateMemberRoleTeamRequestDTO dto, User actingUser) {
@@ -121,7 +121,7 @@ public class TeamService {
 
         teamMembershipActionValidator.validateRoleUpdate(actingMembership, membershipToUpdate, dto.getNewRole());
 
-        membershipToUpdate.setTeamRole(dto.getNewRole());
+        membershipToUpdate.changeRole(dto.getNewRole());
         TeamMember updatedMembership = teamMemberRepository.save(membershipToUpdate);
 
         return toTeamMemberResponseDTO(updatedMembership);
@@ -171,8 +171,7 @@ public class TeamService {
 
         String token = UUID.randomUUID().toString();
         TeamMember newMember = new TeamMember(userToInvite, team, dto.getRole());
-        newMember.setInvitationToken(token);
-        newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+        newMember.generateInvitation(token, LocalDateTime.now().plusHours(24));
 
         team.addMember(newMember);
         teamRepository.save(team);
@@ -189,9 +188,7 @@ public class TeamService {
         TeamMember membership = findByInvitationTokenEmailORThrow(token);
         teamTokenValidator.validateInvitationToken(membership);
 
-        membership.setAcceptedInvite(true);
-        membership.setInvitationToken(null);
-        membership.setInvitationTokenExpiry(null);
+        membership.acceptedInvitation();
 
         teamMemberRepository.save(membership);
     }
@@ -202,9 +199,7 @@ public class TeamService {
         Team team = findTeamByIdOrThrow(teamID);
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
-        String token = UUID.randomUUID().toString();
-        team.setInvitationToken(token);
-        team.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+        String token = team.generateInviteLinkToken();
 
         teamRepository.save(team);
         return new InviteLinkResponseDTO(baseUrl + "/api/team/join?token=" + token,
@@ -224,7 +219,7 @@ public class TeamService {
         membershipValidator.validateNewMember(actingUser, team);
 
         TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
-        newMember.setAcceptedInvite(true);
+        newMember.acceptedInvitation();
 
         team.addMember(newMember);
         teamRepository.save(team);

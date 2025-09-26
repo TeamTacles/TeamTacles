@@ -69,7 +69,7 @@ public class TestDataFactory {
     // Team Factory Methods
 
     public static Team createTeam(User owner) {
-        Team team = new Team();
+        Team team = new Team("Team Tacles", "A great team", owner);
         try {
             Field idField = Team.class.getDeclaredField("id");
             idField.setAccessible(true);
@@ -77,12 +77,9 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
-        team.setName("Team Tacles");
-        team.setDescription("A great team");
-        team.setOwner(owner);
 
         TeamMember ownerMembership = new TeamMember(owner, team, ETeamRole.OWNER);
-        ownerMembership.setAcceptedInvite(true);
+        ownerMembership.acceptedInvitation();
         team.addMember(ownerMembership);
 
         return team;
@@ -97,7 +94,7 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
-        member.setAcceptedInvite(true);
+        member.acceptedInvitation();
         return member;
     }
 

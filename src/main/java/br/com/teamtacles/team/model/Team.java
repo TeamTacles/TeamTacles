@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @ToString(exclude = {"owner", "members"})
 @EqualsAndHashCode(of = "id")
@@ -24,15 +24,19 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @Size(min=3, max=50)
     @NotBlank(message="The team name cannot be blank")
     private String name;
 
+    @Setter
     @Size(max=250)
     private String description;
 
-    @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;
+
+    private String invitationToken;
+    private LocalDateTime invitationTokenExpiry;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
@@ -41,13 +45,15 @@ public class Team {
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> members = new HashSet<>();
 
-    private String invitationToken;
-
-    private LocalDateTime invitationTokenExpiry;
-
     @PrePersist
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();
+    }
+
+    public Team(String name, String description, User owner) {
+        this.name = name;
+        this.description = (description == null) ? "" : description;
+        this.owner = owner;
     }
 
     public void addMember(TeamMember member) {
@@ -58,5 +64,19 @@ public class Team {
     public void removeMember(TeamMember member) {
         this.members.remove(member);
         member.setTeam(null);
+    }
+
+    public String generateInviteLinkToken() {
+        String token = UUID.randomUUID().toString();
+
+        this.invitationToken = token;
+        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+
+        return token;
+    }
+
+    public void expiryInviteLinkToken() {
+        this.invitationToken = null;
+        this.invitationTokenExpiry = null;
     }
 }

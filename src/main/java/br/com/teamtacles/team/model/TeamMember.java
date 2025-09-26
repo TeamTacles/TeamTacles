@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @ToString(exclude = {"user", "team"})
 @EqualsAndHashCode(of = "id")
@@ -25,6 +24,7 @@ public class TeamMember {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
     private Team team;
@@ -56,5 +56,21 @@ public class TeamMember {
         this.user = user;
         this.team = team;
         this.teamRole = teamRole;
+    }
+
+    public void generateInvitation(String token, LocalDateTime expiryDate) {
+        this.invitationToken = token;
+        this.invitationTokenExpiry = expiryDate;
+        this.acceptedInvite = false;
+    }
+
+    public void acceptedInvitation() {
+        this.acceptedInvite = true;
+        this.invitationToken = null;
+        this.invitationTokenExpiry = null;
+    }
+
+    public void changeRole(ETeamRole role) {
+        this.teamRole = role;
     }
 }

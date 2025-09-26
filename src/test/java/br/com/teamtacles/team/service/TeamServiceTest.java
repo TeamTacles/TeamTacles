@@ -28,6 +28,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.AccessDeniedException;
 import br.com.teamtacles.team.validator.TeamInvitationValidator;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Field;
 import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,25 +75,23 @@ public class TeamServiceTest {
             // Arrange
             User owner = TestDataFactory.createValidUser();
             TeamRequestRegisterDTO dto = TestDataFactory.createTeamRequestRegisterDTO();
-            Team newTeam = new Team();
-            newTeam.setName(dto.getName());
-            newTeam.setDescription(dto.getDescription());
-            newTeam.setOwner(owner);
 
             when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
                 Team savedTeam = invocation.getArgument(0);
-                savedTeam.setId(1L);
+                Field idField = ReflectionUtils.findField(Team.class, "id");
+                ReflectionUtils.makeAccessible(idField);
+                ReflectionUtils.setField(idField, savedTeam, 1L);
                 return savedTeam;
             });
-            when(modelMapper.map(dto, Team.class)).thenReturn(newTeam);
+
             when(modelMapper.map(any(Team.class), eq(TeamResponseDTO.class))).thenReturn(new TeamResponseDTO());
 
             ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
 
-            //Act
+            // Act
             teamService.createTeam(dto, owner);
 
-            //Assert
+            // Assert
             verify(teamNameUniquenessValidator).validate(dto.getName(), owner);
             verify(teamRepository).save(teamCaptor.capture());
             Team savedTeam = teamCaptor.getValue();
