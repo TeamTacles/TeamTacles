@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -45,15 +46,15 @@ public class Team {
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> members = new HashSet<>();
 
+    public Team(String name, String description, User owner) {
+        this.name = name;
+        this.description = description == null ? "" : description;
+        this.owner = owner;
+    }
+
     @PrePersist
     public void onCreate() {
         this.createdAt = OffsetDateTime.now();
-    }
-
-    public Team(String name, String description, User owner) {
-        this.name = name;
-        this.description = (description == null) ? "" : description;
-        this.owner = owner;
     }
 
     public void addMember(TeamMember member) {
@@ -78,5 +79,9 @@ public class Team {
     public void expiryInviteLinkToken() {
         this.invitationToken = null;
         this.invitationTokenExpiry = null;
+    }
+
+    public Set<TeamMember> getMembers() {
+        return Collections.unmodifiableSet(members);
     }
 }

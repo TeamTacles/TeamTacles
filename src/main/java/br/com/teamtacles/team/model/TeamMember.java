@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Getter
 @NoArgsConstructor
@@ -58,10 +59,13 @@ public class TeamMember {
         this.teamRole = teamRole;
     }
 
-    public void generateInvitation(String token, LocalDateTime expiryDate) {
+    public String generateInvitation() {
+        String token = UUID.randomUUID().toString();
+
         this.invitationToken = token;
-        this.invitationTokenExpiry = expiryDate;
-        this.acceptedInvite = false;
+        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+
+        return token;
     }
 
     public void acceptedInvitation() {

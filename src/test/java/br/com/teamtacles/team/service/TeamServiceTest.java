@@ -145,7 +145,7 @@ public class TeamServiceTest {
             doNothing().when(teamInvitationValidator).validateRole(any(ETeamRole.class));
 
             //Act
-            teamService.inviteMember(team.getId(), inviteDTO, owner);
+            teamService.inviteMemberByEmail(team.getId(), inviteDTO, owner);
 
             // Assert
             verify(teamAuthorizationService).checkTeamAdmin(owner, team);
@@ -167,7 +167,7 @@ public class TeamServiceTest {
             doThrow(new AccessDeniedException("Permission denied.")).when(teamAuthorizationService).checkTeamAdmin(member, team);
 
             // Act & Assert
-            assertThatThrownBy(() -> teamService.inviteMember(team.getId(), inviteDTO, member))
+            assertThatThrownBy(() -> teamService.inviteMemberByEmail(team.getId(), inviteDTO, member))
                     .isInstanceOf(AccessDeniedException.class);
 
             verify(teamRepository, never()).save(any());
@@ -192,7 +192,7 @@ public class TeamServiceTest {
                     .when(membershipValidator).validateNewMember(alreadyMember, team);
 
             // Act & Assert
-            assertThatThrownBy(() -> teamService.inviteMember(team.getId(), inviteDTO, owner))
+            assertThatThrownBy(() -> teamService.inviteMemberByEmail(team.getId(), inviteDTO, owner))
                     .isInstanceOf(ResourceAlreadyExistsException.class);
 
             verify(teamRepository, never()).save(any());

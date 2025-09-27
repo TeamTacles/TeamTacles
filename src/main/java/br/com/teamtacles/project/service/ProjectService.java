@@ -103,11 +103,10 @@ public class ProjectService {
     public ProjectResponseDTO createProject(ProjectRequestRegisterDTO requestDTO, User actingUser) {
         projectTitleUniquenessValidator.validate(requestDTO.getTitle(), actingUser);
 
-        Project newProject = modelMapper.map(requestDTO, Project.class);
-        newProject.setOwner(actingUser);
+        Project newProject = new Project(requestDTO.getTitle(), requestDTO.getDescription(), actingUser);
 
         ProjectMember creatorMembership = new ProjectMember(actingUser, newProject, EProjectRole.OWNER);
-        creatorMembership.setAcceptedInvite(true);
+        creatorMembership.acceptedInvitation();
         newProject.addMember(creatorMembership);
 
         Project savedProject = projectRepository.save(newProject);
@@ -150,7 +149,7 @@ public class ProjectService {
 
         projectMembershipActionValidator.validateRoleUpdate(actingMembership, membershipToUpdate, dto.getNewRole());
 
-        membershipToUpdate.setProjectRole(dto.getNewRole());
+        membershipToUpdate.changeRole(dto.getNewRole());
         ProjectMember updatedMembership = projectMemberRepository.save(membershipToUpdate);
 
         return toProjectMemberResponseDTO(updatedMembership);
@@ -218,10 +217,24 @@ public class ProjectService {
         return project;
     }
 
+    @BusinessActivityLog(action = "Generate Project Report")
+    public ProjectReportDTO getProjectReport(Long projectId, User actingUser) {
+        projectAuthorizationService.checkProjectMembership(actingUser, findProjectByIdOrThrow(projectId));
+
+        Project projectWithTasks = findProjectWithMembersAndTasksOrThrow(projectId);
+        TaskSummaryDTO summary = calculateTaskSummary(projectWithTasks.getTasks());
+
+        List<MemberPerformanceDTO> ranking = calculateMemberPerformanceRanking(projectId);
+
+        return ProjectReportDTO.builder()
+                .summary(summary)
+                .memberPerformanceRanking(ranking)
+                .build();
+    }
 
     @BusinessActivityLog(action = "Invite Member to Project")
     @Transactional
-    public void inviteMember(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
+    public void inviteMemberByEmail(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
         projectAuthorizationService.checkProjectAdmin(actingUser, project);
         projectInvitationValidator.validateRole(requestDTO.getRole());
@@ -231,19 +244,17 @@ public class ProjectService {
         projectMembershipValidator.validateNewMember(userToInvite, project);
 
         ProjectMember newMember = new ProjectMember(userToInvite, project, requestDTO.getRole());
-        newMember.setInvitationToken(UUID.randomUUID().toString());
-        newMember.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
-        newMember.setAcceptedInvite(false);
+        String token = newMember.generateInvitation();
 
         project.addMember(newMember);
         projectRepository.save(project);
 
-        emailService.sendProjectInvitationEmail(userToInvite.getEmail(), project.getTitle(), newMember.getInvitationToken());
+        emailService.sendProjectInvitationEmail(userToInvite.getEmail(), project.getTitle(), token);
     }
 
     @BusinessActivityLog(action = "Accept Project Invitation via Email Token")
     @Transactional
-    public void acceptInvitation(String token) {
+    public void acceptInvitationFromEmail(String token) {
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
@@ -251,9 +262,7 @@ public class ProjectService {
         ProjectMember membership = findByInvitationTokenEmailOrThrow(token);
         projectTokenValidator.validateInvitationEmailToken(membership);
 
-        membership.setAcceptedInvite(true);
-        membership.setInvitationToken(null);
-        membership.setInvitationTokenExpiry(null);
+        membership.acceptedInvitation();
 
         projectMemberRepository.save(membership);
     }
@@ -264,9 +273,7 @@ public class ProjectService {
         Project project = findProjectByIdOrThrow(projectId);
         projectAuthorizationService.checkProjectAdmin(actingUser, project);
 
-        String token = UUID.randomUUID().toString();
-        project.setInvitationToken(token);
-        project.setInvitationTokenExpiry(LocalDateTime.now().plusHours(24));
+        String token = project.generateInviteLinkToken();
 
         projectRepository.save(project);
 
@@ -276,7 +283,7 @@ public class ProjectService {
 
     @BusinessActivityLog(action = "Accept Project Invitation via Link")
     @Transactional
-    public ProjectMemberResponseDTO acceptProjectInvitationLink(String token, User actingUser) {
+    public ProjectMemberResponseDTO acceptInvitationFromLink(String token, User actingUser) {
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
@@ -287,7 +294,7 @@ public class ProjectService {
         projectMembershipValidator.validateNewMember(actingUser, project);
 
         ProjectMember newMember = new ProjectMember(actingUser, project, EProjectRole.MEMBER);
-        newMember.setAcceptedInvite(true);
+        newMember.acceptedInvitation();
 
         project.addMember(newMember);
         projectRepository.save(project);
@@ -317,10 +324,6 @@ public class ProjectService {
 
         project.removeMember(membershipToDelete);
         projectRepository.save(project);
-    }
-
-    public Project findProjectEntityById(Long teamId) {
-        return findProjectByIdOrThrow(teamId);
     }
 
     public Set<User> findProjectMembersFromIdList(Long projectId, List<Long> userIds) {
@@ -366,22 +369,6 @@ public class ProjectService {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 
-    @BusinessActivityLog(action = "Generate Project Report")
-    @Transactional(readOnly = true)
-    public ProjectReportDTO getProjectReport(Long projectId, User actingUser) {
-        projectAuthorizationService.checkProjectMembership(actingUser, findProjectByIdOrThrow(projectId));
-
-        Project projectWithTasks = findProjectWithMembersAndTasksOrThrow(projectId);
-        TaskSummaryDTO summary = calculateTaskSummary(projectWithTasks.getTasks());
-
-        List<MemberPerformanceDTO> ranking = calculateMemberPerformanceRanking(projectId);
-
-        return ProjectReportDTO.builder()
-                .summary(summary)
-                .memberPerformanceRanking(ranking)
-                .build();
-    }
-
     private List<MemberPerformanceDTO> calculateMemberPerformanceRanking(Long projectId) {
         List<Task> completedTasks = taskRepository.findAllByProjectIdAndStatusWithAssignments(projectId, ETaskStatus.DONE);
         return completedTasks.stream()
@@ -398,7 +385,10 @@ public class ProjectService {
                 ))
                 .sorted(Comparator.comparingLong(MemberPerformanceDTO::getCompletedTasksCount).reversed())
                 .collect(Collectors.toList());
+    }
 
+    public Project findProjectEntityById(Long teamId) {
+        return findProjectByIdOrThrow(teamId);
     }
 
     private Project findProjectByIdForReportOrThrow(Long projectId, Long userId) {

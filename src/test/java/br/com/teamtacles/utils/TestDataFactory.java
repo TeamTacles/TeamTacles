@@ -121,7 +121,7 @@ public class TestDataFactory {
     }
 
     public static Project createMockProject(User owner) {
-        Project project = new Project();
+        Project project = new Project("Mock Project", "A mock project for testing purposes.", owner);
         try {
             Field idField = Project.class.getDeclaredField("id");
             idField.setAccessible(true);
@@ -129,12 +129,9 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException("Failed to set ID on Project mock", e);
         }
-        project.setTitle("Mock Project");
-        project.setDescription("A mock project for testing purposes.");
-        project.setOwner(owner);
 
         ProjectMember ownerMembership = new ProjectMember(owner, project, EProjectRole.OWNER);
-        ownerMembership.setAcceptedInvite(true);
+        ownerMembership.acceptedInvitation();
 
         try {
             Field memberIdField = ProjectMember.class.getDeclaredField("id");

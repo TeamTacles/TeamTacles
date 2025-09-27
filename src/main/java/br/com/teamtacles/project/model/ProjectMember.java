@@ -1,15 +1,16 @@
 package br.com.teamtacles.project.model;
 
 import br.com.teamtacles.project.enumeration.EProjectRole;
+import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @ToString(exclude = {"user", "project"})
 @EqualsAndHashCode(of = "id")
@@ -21,6 +22,7 @@ public class ProjectMember {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
@@ -49,5 +51,24 @@ public class ProjectMember {
         this.user = user;
         this.project = project;
         this.projectRole = projectRole;
+    }
+
+    public String generateInvitation() {
+        String token = UUID.randomUUID().toString();
+
+        this.invitationToken = token;
+        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+
+        return token;
+    }
+
+    public void acceptedInvitation() {
+        this.acceptedInvite = true;
+        this.invitationToken = null;
+        this.invitationTokenExpiry = null;
+    }
+
+    public void changeRole(EProjectRole role) {
+        this.projectRole = role;
     }
 }

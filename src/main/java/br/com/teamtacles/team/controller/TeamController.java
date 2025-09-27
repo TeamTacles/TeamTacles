@@ -35,12 +35,12 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTeam);
     }
 
-    @PostMapping("/{teamId}/invite")
+    @PostMapping("/{teamId}/invite-email")
     public ResponseEntity<Void> inviteMember(
             @PathVariable Long teamId,
             @RequestBody @Valid InvitedMemberRequestDTO dto,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        teamService.inviteMember(teamId, dto, authenticatedUser.getUser());
+        teamService.inviteMemberByEmail(teamId, dto, authenticatedUser.getUser());
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
@@ -48,7 +48,7 @@ public class TeamController {
     public ResponseEntity<InviteLinkResponseDTO> generateInvitedLink(
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        InviteLinkResponseDTO inviteLinkDTO = teamService.generateTeamInviteToken(teamId, authenticatedUser.getUser());
+        InviteLinkResponseDTO inviteLinkDTO = teamService.generateInvitedLink(teamId, authenticatedUser.getUser());
         return ResponseEntity.ok(inviteLinkDTO);
     }
 
@@ -56,13 +56,13 @@ public class TeamController {
     public ResponseEntity<TeamMemberResponseDTO> joinTeamWithLink(
             @RequestParam String token,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        TeamMemberResponseDTO teamMemberDTO = teamService.acceptTeamInvitationLink(token, authenticatedUser.getUser());
+        TeamMemberResponseDTO teamMemberDTO = teamService.acceptInvitationFromLink(token, authenticatedUser.getUser());
         return ResponseEntity.ok(teamMemberDTO);
     }
 
-    @GetMapping("/accept-invite")
+    @GetMapping("/accept-invite-email")
     public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
-        teamService.acceptInvitation(token);
+        teamService.acceptInvitationFromEmail(token);
         return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
     }
 

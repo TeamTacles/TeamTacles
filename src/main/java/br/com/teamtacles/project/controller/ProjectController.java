@@ -43,12 +43,12 @@ public class ProjectController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @PostMapping("/{projectId}/invite")
+    @PostMapping("/{projectId}/invite-email")
     public ResponseEntity<Void> inviteMember(
             @PathVariable Long projectId,
             @RequestBody @Valid InviteProjectMemberRequestDTO requestDTO,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        projectService.inviteMember(projectId, requestDTO, authenticatedUser.getUser());
+        projectService.inviteMemberByEmail(projectId, requestDTO, authenticatedUser.getUser());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -64,7 +64,7 @@ public class ProjectController {
     public ResponseEntity<ProjectMemberResponseDTO> joinProjectWithLink(
             @RequestParam String token,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        ProjectMemberResponseDTO projectMemberDTO = projectService.acceptProjectInvitationLink(token, authenticatedUser.getUser());
+        ProjectMemberResponseDTO projectMemberDTO = projectService.acceptInvitationFromLink(token, authenticatedUser.getUser());
         return ResponseEntity.ok(projectMemberDTO);
     }
 
@@ -104,9 +104,9 @@ public class ProjectController {
         return ResponseEntity.ok(projects);
     }
 
-    @GetMapping("/accept-invite") // para o browser GET permite clique no link
+    @GetMapping("/accept-invite-email") // para o browser GET permite clique no link
     public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
-        projectService.acceptInvitation(token);
+        projectService.acceptInvitationFromEmail(token);
         return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
     }
 

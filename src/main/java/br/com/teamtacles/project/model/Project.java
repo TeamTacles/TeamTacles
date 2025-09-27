@@ -9,11 +9,12 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @ToString(exclude = {"owner", "members", "tasks"})
 @EqualsAndHashCode(of = "id")
@@ -25,10 +26,12 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @NotBlank
     @Size(min=3, max=50)
     private String title;
 
+    @Setter
     @Size(max=250)
     private String description;
 
@@ -36,8 +39,10 @@ public class Project {
     @JoinColumn(name="owner_id", nullable = false)
     private User owner;
 
-    @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;
+
+    private String invitationToken;
+    private LocalDateTime invitationTokenExpiry;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> members = new HashSet<>();
@@ -45,9 +50,11 @@ public class Project {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Task> tasks = new HashSet<>();
 
-    private String invitationToken;
-
-    private LocalDateTime invitationTokenExpiry;
+    public Project(String title, String description, User owner) {
+        this.title = title;
+        this.description = description == null ? "" : description;
+        this.owner = owner;
+    }
 
     @PrePersist
     public void onCreate() {
@@ -63,5 +70,27 @@ public class Project {
     public void removeMember(ProjectMember member) {
         this.members.remove(member);
         member.setProject(null);
+    }
+
+    public String generateInviteLinkToken() {
+        String token = UUID.randomUUID().toString();
+
+        this.invitationToken = token;
+        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+
+        return token;
+    }
+
+    public void expiryInviteLinkToken() {
+        this.invitationToken = null;
+        this.invitationTokenExpiry = null;
+    }
+
+    public Set<ProjectMember> getMembers() {
+        return Collections.unmodifiableSet(members);
+    }
+
+    public Set<Task> getTasks() {
+        return Collections.unmodifiableSet(tasks);
     }
 }

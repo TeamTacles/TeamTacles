@@ -160,7 +160,7 @@ public class TeamService {
 
     @BusinessActivityLog(action = "Invite Member to Team")
     @Transactional
-    public void inviteMember(Long teamId, InvitedMemberRequestDTO dto, User actingUser) {
+    public void inviteMemberByEmail(Long teamId, InvitedMemberRequestDTO dto, User actingUser) {
         Team team = findTeamByIdOrThrow(teamId);
         teamInvitationValidator.validateRole(dto.getRole());
 
@@ -169,18 +169,18 @@ public class TeamService {
 
         membershipValidator.validateNewMember(userToInvite, team);
 
-        String token = UUID.randomUUID().toString();
         TeamMember newMember = new TeamMember(userToInvite, team, dto.getRole());
-        newMember.generateInvitation(token, LocalDateTime.now().plusHours(24));
+        String token = newMember.generateInvitation();
 
         team.addMember(newMember);
         teamRepository.save(team);
+
         emailService.sendTeamInvitationEmail(userToInvite.getEmail(), team.getName(), token);
     }
 
     @BusinessActivityLog(action = "Accept Team Invitation via Email")
     @Transactional
-    public void acceptInvitation(String token) {
+    public void acceptInvitationFromEmail(String token) {
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }
@@ -195,7 +195,7 @@ public class TeamService {
 
     @BusinessActivityLog(action = "Generate Team Invitation Link")
     @Transactional
-    public InviteLinkResponseDTO generateTeamInviteToken(Long teamID, User actingUser) {
+    public InviteLinkResponseDTO generateInvitedLink(Long teamID, User actingUser) {
         Team team = findTeamByIdOrThrow(teamID);
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
@@ -208,7 +208,7 @@ public class TeamService {
 
     @BusinessActivityLog(action = "Accept Team Invitation via Link")
     @Transactional
-    public TeamMemberResponseDTO acceptTeamInvitationLink(String token, User actingUser) {
+    public TeamMemberResponseDTO acceptInvitationFromLink(String token, User actingUser) {
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Invitation token cannot be null or empty.");
         }

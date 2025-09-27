@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.time.LocalDateTime;
@@ -104,8 +105,21 @@ public class User {
     public void addRole(Role role) {
         this.roles.add(role);
     }
+
     public void removeRole(Role role) {
         this.roles.remove(role);
+    }
+
+    public Set<TeamMember> getTeamMemberships() {
+        return Collections.unmodifiableSet(teamMemberships);
+    }
+
+    public Set<ProjectMember> getProjectMemberships() {
+        return Collections.unmodifiableSet(projectMemberships);
+    }
+
+    public Set<TaskAssignment> getTaskAssignments() {
+        return Collections.unmodifiableSet(taskAssignments);
     }
 }
 

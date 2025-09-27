@@ -91,18 +91,13 @@ class ProjectServiceTest {
 
         doNothing().when(projectTitleUniquenessValidator).validate(anyString(), any(User.class));
 
-        Project projectFromDTO = new Project();
-        projectFromDTO.setTitle(requestDTO.getTitle());
-        projectFromDTO.setDescription(requestDTO.getDescription());
-        when(modelMapper.map(requestDTO, Project.class)).thenReturn(projectFromDTO);
-
         Project savedProject = TestDataFactory.createMockProject(authenticatedUser);
         savedProject.setTitle(requestDTO.getTitle());
         savedProject.setDescription(requestDTO.getDescription());
 
         // Simular que o cascade funcionou - projeto salvo COM o membro
         ProjectMember ownerMember = new ProjectMember(authenticatedUser, savedProject, EProjectRole.OWNER);
-        ownerMember.setAcceptedInvite(true);
+        ownerMember.acceptedInvitation();
         savedProject.addMember(ownerMember);
 
         when(projectRepository.save(any(Project.class))).thenReturn(savedProject);
@@ -351,7 +346,7 @@ class ProjectServiceTest {
             doNothing().when(emailService).sendProjectInvitationEmail(anyString(), anyString(), anyString());
 
             // Act
-            projectService.inviteMember(projectId, requestDTO, inviter);
+            projectService.inviteMemberByEmail(projectId, requestDTO, inviter);
 
             // Assert
             verify(projectRepository).save(projectCaptor.capture());
@@ -394,7 +389,7 @@ class ProjectServiceTest {
 
             // Act & Assert
             assertThrows(AccessDeniedException.class,
-                    () -> projectService.inviteMember(projectId, requestDTO, regularMember));
+                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, regularMember));
             verify(userService, never()).findUserEntityByEmail(anyString());
             verify(projectRepository, never()).save(any(Project.class));
             verifyNoInteractions(emailService);
