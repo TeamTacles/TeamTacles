@@ -24,14 +24,14 @@ public class ProjectMember {
 
     @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
+    @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "joined_at")
+    @Column(name = "joined_at", nullable = false, updatable = false)
     private OffsetDateTime joinedAt;
 
     @Column(name = "accepted_invite")

@@ -5,9 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 public class ProjectRequestUpdateDTO {
 
     @Size(min = 3, max = 50, message = "Title must be between 3 and 50 characters")

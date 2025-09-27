@@ -4,15 +4,17 @@ import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 @Getter
-@Setter
+@NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"project", "owner", "assignments"})
 @Entity
@@ -24,9 +26,11 @@ public class Task {
     @Setter(AccessLevel.NONE)
     private Long id;
 
+    @Setter
     @Column(nullable = false, length = 100)
     private String title;
 
+    @Setter
     @Column(length = 500)
     private String description;
 
@@ -34,19 +38,21 @@ public class Task {
     @Column(nullable = false, length = 30)
     private ETaskStatus status;
 
-    @Column(nullable = false, updatable = false)
-    @Setter(AccessLevel.NONE)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Setter(AccessLevel.NONE)
+    @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
+    @Setter
+    @Column(name = "due_date")
     private OffsetDateTime dueDate;
 
+    @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
-    @Column(length = 300)
+    @Column(name = "completion_comment", length = 300)
     private String completionComment;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -59,6 +65,15 @@ public class Task {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TaskAssignment> assignments = new HashSet<>();
+
+    public Task(Project project, String title, String description, User owner, OffsetDateTime dueDate) {
+        this.project = project;
+        this.title = title;
+        this.description = description == null ? "" : description;
+        this.owner = owner;
+        this.dueDate = dueDate;
+        this.status = ETaskStatus.TO_DO;
+    }
 
     @PrePersist
     public void onCreate() {
@@ -78,6 +93,16 @@ public class Task {
         assignment.setTask(null);
     }
 
+    public void updateStatus(ETaskStatus status) {
+        this.status = status;
+    }
+
+    public void completedTask(String completionComment) {
+        this.status = ETaskStatus.DONE;
+        this.completedAt = OffsetDateTime.now();
+        this.completionComment = completionComment;
+    }
+
     public boolean isToDo() {
         return this.status == ETaskStatus.TO_DO;
     }
@@ -92,5 +117,9 @@ public class Task {
 
     public boolean isOverdue() {
         return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
+    }
+
+    public Set<TaskAssignment> getAssignments() {
+        return Collections.unmodifiableSet(assignments);
     }
 }

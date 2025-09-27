@@ -19,6 +19,7 @@ import br.com.teamtacles.task.repository.TaskRepository;
 import br.com.teamtacles.task.validator.TaskAssignmentRoleValidator;
 import br.com.teamtacles.task.validator.TaskProjectAssociationValidator;
 import br.com.teamtacles.task.validator.TaskStateTransitionValidator;
+import br.com.teamtacles.team.repository.TeamMemberRepository;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.service.UserService;
 import org.modelmapper.ModelMapper;
@@ -47,6 +48,7 @@ public class TaskService {
     private final TaskAuthorizationService taskAuthorizationService;
     private final ModelMapper modelMapper;
     private final PagedResponseMapper pagedResponseMapper;
+    private final TeamMemberRepository teamMemberRepository;
 
     public TaskService(TaskRepository taskRepository,
                        TaskAssignmentRepository taskAssignmentRepository,
@@ -58,7 +60,7 @@ public class TaskService {
                        ProjectAuthorizationService projectAuthorizationService,
                        TaskAuthorizationService taskAuthorizationService,
                        ModelMapper modelMapper,
-                       PagedResponseMapper pagedResponseMapper) {
+                       PagedResponseMapper pagedResponseMapper, TeamMemberRepository teamMemberRepository) {
         this.taskRepository = taskRepository;
         this.taskAssignmentRepository = taskAssignmentRepository;
         this.taskProjectAssociationValidator = taskProjectAssociationValidator;
@@ -70,6 +72,7 @@ public class TaskService {
         this.taskAuthorizationService = taskAuthorizationService;
         this.modelMapper = modelMapper;
         this.pagedResponseMapper = pagedResponseMapper;
+        this.teamMemberRepository = teamMemberRepository;
     }
 
     @BusinessActivityLog(action = "Create Task")
@@ -78,10 +81,7 @@ public class TaskService {
         Project project = projectService.findProjectEntityById(projectId);
         projectAuthorizationService.checkProjectMembership(actingUser, project);
 
-        Task task = modelMapper.map(taskDto, Task.class);
-        task.setProject(project);
-        task.setOwner(actingUser);
-
+        Task task = new Task(project, taskDto.getTitle(), taskDto.getDescription(), actingUser, taskDto.getDueDate());
         TaskAssignment ownerAssignment = new TaskAssignment(task, actingUser, ETaskRole.OWNER);
         task.addAssigment(ownerAssignment);
 
@@ -97,11 +97,10 @@ public class TaskService {
 
         taskStateTransitionValidator.validate(task.getStatus(), updateStatusDTO.getNewStatus());
 
-        task.setStatus(updateStatusDTO.getNewStatus());
-
-        if (updateStatusDTO.getNewStatus() == ETaskStatus.DONE) {
-            task.setCompletedAt(OffsetDateTime.now());
-            task.setCompletionComment(updateStatusDTO.getCompletionComment());
+        if(updateStatusDTO.getNewStatus() == ETaskStatus.DONE){
+            task.completedTask(updateStatusDTO.getCompletionComment());
+        } else {
+            task.updateStatus(updateStatusDTO.getNewStatus());
         }
 
         Task updateTask = taskRepository.save(task);
@@ -116,6 +115,25 @@ public class TaskService {
         Page<TaskResponseDTO> taskResponseDTOPage = tasks.map(task -> modelMapper.map(task, TaskResponseDTO.class));
 
         return pagedResponseMapper.toPagedResponse(taskResponseDTOPage, TaskResponseDTO.class);
+    }
+
+    public TaskResponseDTO getTaskById(Long projectId, Long taskId, User actingUser) {
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
+
+        taskAuthorizationService.checkViewPermission(actingUser, task);
+
+        return modelMapper.map(task, TaskResponseDTO.class);
+    }
+
+    public List<UserAssignmentResponseDTO> getTaskMembers(Long projectId, Long taskId, User actingUser) {
+        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
+        taskAuthorizationService.checkViewPermission(actingUser, task);
+
+        List<TaskAssignment> assignments = taskAssignmentRepository.findAllByTaskId(taskId);
+
+        return assignments.stream()
+                .map(this::toUserAssignmentResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @BusinessActivityLog(action = "Assign Users to Task")
@@ -142,7 +160,7 @@ public class TaskService {
         for (TaskAssignmentRequestDTO assignmentDTO : assignmentsDTO) {
             User userToAssign = validMembers.stream()
                     .filter(a -> a.getId().equals(assignmentDTO.getUserId()))
-                    .findFirst().orElseThrow();
+                    .findFirst().orElseThrow(() -> new ResourceNotFoundException("One or more users are not valid members of this project."));
 
             if (!alreadyAssignedUsers.contains(userToAssign)) {
                 TaskAssignment newAssignment = new TaskAssignment(task, userToAssign, assignmentDTO.getTaskRole());
@@ -164,10 +182,16 @@ public class TaskService {
             throw new IllegalArgumentException("The task owner cannot be removed");
         }
 
-        taskAssignmentRepository.deleteAllByTaskIdAndUserIds(taskId, userIdsToRemove);
-    }
-    @BusinessActivityLog(action = "Delete Task")
+        Set<TaskAssignment> assignmentsToRemove = taskAssignmentRepository.findAllByTaskIdAndUserIds(taskId, userIdsToRemove);
 
+        for(TaskAssignment assignmentToRemove: assignmentsToRemove) {
+            task.removeAssigment(assignmentToRemove);
+        }
+
+        taskRepository.save(task);
+    }
+
+    @BusinessActivityLog(action = "Delete Task")
     @Transactional
     public void deleteTaskById(Long projectId, Long taskId, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
@@ -202,34 +226,11 @@ public class TaskService {
                 .orElseThrow((() -> new ResourceNotFoundException("User to remove is not assigned to this task.")));
     }
 
-    @Transactional
-    public TaskResponseDTO getTaskById(Long projectId, Long taskId, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
-
-        taskAuthorizationService.checkViewPermission(actingUser, task);
-
-        return modelMapper.map(task, TaskResponseDTO.class);
-    }
-
     public Task findTaskByIdOrThrow(Long taskId) {
         String errorMessage = String.format("Task with id '%d' not found.", taskId);
         return taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException(errorMessage));
     }
-
-    @Transactional(readOnly = true)
-    public List<UserAssignmentResponseDTO> getTaskMembers(Long projectId, Long taskId, User actingUser) {
-        Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
-        taskAuthorizationService.checkViewPermission(actingUser, task);
-
-        List<TaskAssignment> assignments = taskAssignmentRepository.findAllByTaskId(taskId);
-
-        return assignments.stream()
-                .map(this::toUserAssignmentResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-
 
     private UserAssignmentResponseDTO toUserAssignmentResponseDTO(TaskAssignment assignment) {
         UserAssignmentResponseDTO dto = new UserAssignmentResponseDTO();
@@ -238,6 +239,4 @@ public class TaskService {
         dto.setTaskRole(assignment.getTaskRole());
         return dto;
     }
-
-
 }

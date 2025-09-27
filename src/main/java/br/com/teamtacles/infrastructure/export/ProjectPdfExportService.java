@@ -2,7 +2,7 @@ package br.com.teamtacles.infrastructure.export;
 
 import br.com.teamtacles.common.exception.PdfGenerationException;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
-import br.com.teamtacles.project.dto.request.PdfExportResult;
+import br.com.teamtacles.project.dto.response.PdfExportResult;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;

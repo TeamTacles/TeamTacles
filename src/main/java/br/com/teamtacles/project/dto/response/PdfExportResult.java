@@ -1,4 +1,4 @@
-package br.com.teamtacles.project.dto.request;
+package br.com.teamtacles.project.dto.response;
 
 import lombok.Data;
 

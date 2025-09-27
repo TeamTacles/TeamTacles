@@ -27,21 +27,24 @@ public class Project {
     private Long id;
 
     @Setter
-    @NotBlank
-    @Size(min=3, max=50)
+    @Column(nullable = false, length = 50)
     private String title;
 
     @Setter
-    @Size(max=250)
+    @Column(length = 250)
     private String description;
 
     @ManyToOne
     @JoinColumn(name="owner_id", nullable = false)
     private User owner;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "invitation_token")
     private String invitationToken;
+
+    @Column(name = "invitation_token_expiry")
     private LocalDateTime invitationTokenExpiry;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)

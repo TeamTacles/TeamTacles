@@ -28,26 +28,33 @@ public class User {
     private Long id;
 
     @Setter
-    @Size(min = 3, max = 50)
-    @NotBlank(message="The username  cannot be blank")
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
 
     @Setter
-    @Email(message = "The email must be valid")
-    @Size(min = 8, max = 50)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
     @Setter(AccessLevel.PRIVATE)
-    @Size(min = 5, max = 100)
-    @NotBlank(message="The password cannot be blank")
+    @Column(nullable = false, length = 100)
     private String password;
 
+    @Column(name = "reset_password_token")
     private String resetPasswordToken;
+
+    @Column(name = "reset_password_token_expiry")
     private LocalDateTime resetPasswordTokenExpiry;
+
+    @Column(name = "verification_token")
     private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
     private LocalDateTime verificationTokenExpiry;
+
+    @Column(nullable = false)
     private boolean enabled = false;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @ManyToMany(fetch = FetchType.EAGER)

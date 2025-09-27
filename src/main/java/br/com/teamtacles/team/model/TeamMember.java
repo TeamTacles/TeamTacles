@@ -22,15 +22,15 @@ public class TeamMember {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
+    @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
-    @Column(name = "joined_at")
+    @Column(name = "joined_at", nullable = false, updatable = false)
     private OffsetDateTime joinedAt;
 
     @Column(name = "accepted_invite")

@@ -26,17 +26,20 @@ public class Team {
     private Long id;
 
     @Setter
-    @Size(min=3, max=50)
-    @NotBlank(message="The team name cannot be blank")
+    @Column(nullable = false, unique = true, length = 50)
     private String name;
 
     @Setter
-    @Size(max=250)
+    @Column(length = 250)
     private String description;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "invitation_token")
     private String invitationToken;
+
+    @Column(name = "invitation_token_expiry")
     private LocalDateTime invitationTokenExpiry;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -2,9 +2,8 @@ package br.com.teamtacles.project.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
-import br.com.teamtacles.project.dto.request.PdfExportResult;
+import br.com.teamtacles.project.dto.response.PdfExportResult;
 import br.com.teamtacles.project.dto.response.ProjectReportDTO;
-import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.dto.request.*;
 import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;

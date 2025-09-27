@@ -3,14 +3,11 @@ package br.com.teamtacles.task.model;
 import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 
-@Data
+@Getter
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"task", "user"})
@@ -24,6 +21,7 @@ public class TaskAssignment {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "task_id", nullable = false)
+    @Setter(AccessLevel.PACKAGE)
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -34,7 +32,7 @@ public class TaskAssignment {
     @Column(name = "task_role", nullable = false)
     private ETaskRole taskRole;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "assigned_at", nullable = false, updatable = false)
     private OffsetDateTime assignedAt;
 
     public TaskAssignment(Task task, User user, ETaskRole taskRole) {
@@ -46,5 +44,9 @@ public class TaskAssignment {
     @PrePersist
     public void onAssign() {
         this.assignedAt = OffsetDateTime.now();
+    }
+
+    public void changeRole(ETaskRole newRole) {
+        this.taskRole = newRole;
     }
 }

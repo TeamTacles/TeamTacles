@@ -16,7 +16,8 @@ public class UserRequestRegisterDTO {
     @NotBlank(message = "The name cannot be blank!")
     private String username;
 
-    @Size(max = 250)
+    @Size(max = 100)
+    @NotBlank(message = "The email cannot be blank!")
     @Email(message = "The email must be valid!")
     private String email;
 
@@ -24,6 +25,7 @@ public class UserRequestRegisterDTO {
     @NotBlank(message = "The password cannot be blank!")
     private String password;
 
+    @Size(min = 5, max = 100, message = "The password Confirm must contain between 5 and 100 characters")
     @NotBlank(message = "The password confirmation cannot be blank!")
     private String passwordConfirm;
 }

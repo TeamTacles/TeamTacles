@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -159,6 +160,16 @@ public class UserService {
 
     public User findUserEntityByEmail(String email) {
         return findByEmailIgnoreCaseOrThrow(email);
+    }
+
+    public List<User> findUsersByIdsOrThrow(Set<Long> usersIds) {
+        List<User> users = userRepository.findAllById(usersIds);
+
+        if (users.size() != usersIds.size()) {
+            throw new ResourceNotFoundException("One or more users were not found.");
+        }
+
+        return users;
     }
 
     private User findUserByIdOrThrow(Long userId) {

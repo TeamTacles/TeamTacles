@@ -14,5 +14,6 @@ public class ResetPasswordDTO {
     private String newPassword;
 
     @NotBlank(message = "The password confirmation cannot be blank.")
+    @Size(min = 5, max = 100, message = "The new password confirm must be between 5 and 100 characters.")
     private String passwordConfirm;
 }

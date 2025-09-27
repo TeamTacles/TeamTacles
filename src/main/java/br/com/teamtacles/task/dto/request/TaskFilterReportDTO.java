@@ -1,15 +1,22 @@
 package br.com.teamtacles.task.dto.request;
 
 import br.com.teamtacles.task.enumeration.ETaskStatus;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TaskFilterReportDTO {
 
+    @Size(min = 3, max = 100, message = "Title must be between 3 and 100 characters")
     private String title;
+
     private ETaskStatus status;
     private Long assignedUserId;
 
