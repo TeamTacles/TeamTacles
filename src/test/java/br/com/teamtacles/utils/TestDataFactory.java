@@ -153,4 +153,19 @@ public class TestDataFactory {
         return dto;
     }
 
+    public static ProjectMember createPendingProjectMember(User user, Project project, EProjectRole role) {
+        ProjectMember member = new ProjectMember(user, project, role);
+        member.generateInvitation();
+
+        try {
+            Field idField = ProjectMember.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            ReflectionUtils.setField(idField, member, user.getId() + 200);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set ID on ProjectMember mock", e);
+        }
+
+        return member;
+    }
+
 }

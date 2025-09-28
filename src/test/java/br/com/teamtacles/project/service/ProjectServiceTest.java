@@ -11,10 +11,7 @@ import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.project.repository.ProjectRepository;
-import br.com.teamtacles.project.validator.ProjectInvitationValidator;
-import br.com.teamtacles.project.validator.ProjectMembershipValidator;
-import br.com.teamtacles.project.validator.ProjectTitleUniquenessValidator;
-import br.com.teamtacles.project.validator.ProjectTokenValidator;
+import br.com.teamtacles.project.validator.*;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.service.UserService;
@@ -38,6 +35,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
+import br.com.teamtacles.project.dto.request.UpdateMemberRoleProjectRequestDTO;
+import br.com.teamtacles.project.validator.ProjectMembershipActionValidator;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
@@ -66,6 +65,9 @@ class ProjectServiceTest {
     private ModelMapper modelMapper;
     @Mock
     private ProjectAuthorizationService projectAuthorizationService;
+
+    @Mock
+    private ProjectMembershipActionValidator projectMembershipActionValidator;
 
     @InjectMocks
     private ProjectService projectService;
@@ -394,6 +396,146 @@ class ProjectServiceTest {
             verify(projectRepository, never()).save(any(Project.class));
             verifyNoInteractions(emailService);
         }
+
+        @Test
+        @DisplayName("acceptInvitationFromEmail_whenTokenIsValid_shouldUpdateMembershipToAccepted")
+        void acceptInvitationFromEmail_whenTokenIsValid_shouldUpdateMembershipToAccepted() {
+            // Arrange
+            User owner = TestDataFactory.createValidUser();
+            User invitee = TestDataFactory.createUserWithId(2L, "invitee", "invitee@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+
+            ProjectMember pendingMember = TestDataFactory.createPendingProjectMember(invitee, project, EProjectRole.MEMBER);
+            String validToken = pendingMember.getInvitationToken();
+
+            when(projectMemberRepository.findByInvitationToken(validToken)).thenReturn(Optional.of(pendingMember));
+            doNothing().when(projectTokenValidator).validateInvitationEmailToken(pendingMember);
+            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.acceptInvitationFromEmail(validToken);
+
+            // Assert
+            verify(projectMemberRepository).save(projectMemberCaptor.capture());
+            ProjectMember savedMember = projectMemberCaptor.getValue();
+
+            assertThat(savedMember.isAcceptedInvite()).isTrue();
+            assertThat(savedMember.getInvitationToken()).isNull();
+            assertThat(savedMember.getInvitationTokenExpiry()).isNull();
+
+            verify(projectTokenValidator).validateInvitationEmailToken(pendingMember);
+        }
+        @Test
+        @DisplayName("acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException")
+        void acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException() {
+            // Arrange
+            String invalidToken = "non-existent-token-123";
+            when(projectMemberRepository.findByInvitationToken(invalidToken)).thenReturn(Optional.empty());
+            // Act & Assert
+            ResourceNotFoundException exception = assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> projectService.acceptInvitationFromEmail(invalidToken)
+            );
+            assertThat(exception.getMessage()).isEqualTo("Invalid invitation token.");
+            verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        }
+
+        @Test
+        @DisplayName("updateMemberRole_whenUserIsOwnerAndTargetIsMember_shouldUpdateRoleSuccessfully")
+        void updateMemberRole_whenUserIsOwnerAndTargetIsMember_shouldUpdateRoleSuccessfully() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            User memberToUpdate = TestDataFactory.createUserWithId(2L, "memberToUpdate", "member@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            ProjectMember memberToUpdateMembership = new ProjectMember(memberToUpdate, project, EProjectRole.MEMBER);
+            project.addMember(memberToUpdateMembership);
+
+            UpdateMemberRoleProjectRequestDTO requestDTO = new UpdateMemberRoleProjectRequestDTO(EProjectRole.ADMIN);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(owner, project);
+            when(userService.findUserEntityById(memberToUpdate.getId())).thenReturn(memberToUpdate);
+            when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
+            when(projectMemberRepository.findByUserAndProject(memberToUpdate, project)).thenReturn(Optional.of(memberToUpdateMembership));
+            doNothing().when(projectMembershipActionValidator).validateRoleUpdate(ownerMembership, memberToUpdateMembership, EProjectRole.ADMIN);
+            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.updateMemberRole(projectId, memberToUpdate.getId(), requestDTO, owner);
+
+            // Assert
+            verify(projectMemberRepository).save(projectMemberCaptor.capture());
+            ProjectMember savedMember = projectMemberCaptor.getValue();
+            assertThat(savedMember.getProjectRole()).isEqualTo(EProjectRole.ADMIN);
+            verify(projectAuthorizationService).checkProjectAdmin(owner, project);
+            verify(projectMembershipActionValidator).validateRoleUpdate(ownerMembership, memberToUpdateMembership, EProjectRole.ADMIN);
+        }
+
+        @Test
+        @DisplayName("updateMemberRole_whenUserIsAdminAndTargetIsOwner_shouldThrowAccessDeniedException")
+        void updateMemberRole_whenUserIsAdminAndTargetIsOwner_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            User adminUser = TestDataFactory.createUserWithId(3L, "adminUser", "admin@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            ProjectMember adminMembership = new ProjectMember(adminUser, project, EProjectRole.ADMIN);
+            project.addMember(adminMembership);
+            UpdateMemberRoleProjectRequestDTO requestDTO = new UpdateMemberRoleProjectRequestDTO(EProjectRole.MEMBER);
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(adminUser, project);
+            when(userService.findUserEntityById(owner.getId())).thenReturn(owner);
+            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
+            when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
+            doThrow(new AccessDeniedException("The project OWNER's role cannot be changed."))
+                    .when(projectMembershipActionValidator)
+                    .validateRoleUpdate(adminMembership, ownerMembership, EProjectRole.MEMBER);
+            // Act & Assert
+            assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.updateMemberRole(projectId, owner.getId(), requestDTO, adminUser)
+            );
+
+            verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        }
+
+        @Test
+        @DisplayName("removeMember_whenUserIsOwnerAndTargetIsMember_shouldRemoveMemberSuccessfully")
+        void removeMember_whenUserIsOwnerAndTargetIsMember_shouldRemoveMemberSuccessfully() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            User memberToRemove = TestDataFactory.createUserWithId(2L, "memberToRemove", "member@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            ProjectMember memberToRemoveMembership = new ProjectMember(memberToRemove, project, EProjectRole.MEMBER);
+            project.addMember(memberToRemoveMembership);
+            assertThat(project.getMembers()).hasSize(2);
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(owner, project);
+            when(userService.findUserEntityById(memberToRemove.getId())).thenReturn(memberToRemove);
+            when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
+            when(projectMemberRepository.findByUserAndProject(memberToRemove, project)).thenReturn(Optional.of(memberToRemoveMembership));
+            doNothing().when(projectMembershipActionValidator).validateDeletion(ownerMembership, memberToRemoveMembership);
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.deleteMembershipFromProject(projectId, memberToRemove.getId(), owner);
+
+            // Assert
+            verify(projectRepository).save(projectCaptor.capture());
+            Project savedProject = projectCaptor.getValue();
+            assertThat(savedProject.getMembers()).hasSize(1);
+            assertThat(savedProject.getMembers()).extracting(ProjectMember::getUser).doesNotContain(memberToRemove);
+            assertThat(savedProject.getMembers()).extracting(ProjectMember::getUser).contains(owner);
+            verify(projectMembershipActionValidator).validateDeletion(ownerMembership, memberToRemoveMembership);
+        }
+
+
 
     }
 }
