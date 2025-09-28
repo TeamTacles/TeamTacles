@@ -314,14 +314,14 @@ public class ProjectService {
     @Transactional
     public void deleteMembershipFromProject(Long projectId, Long userIdToDelete, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
-        projectAuthorizationService.checkProjectAdmin(actingUser, project);
-
         User userToDelete = userService.findUserEntityById(userIdToDelete);
+
+        if (!actingUser.getId().equals(userIdToDelete)) {
+            projectAuthorizationService.checkProjectAdmin(actingUser, project);
+        }
         ProjectMember membershipToDelete = findMembershipByIdOrThrow(userToDelete, project);
         ProjectMember actingMembership = findMembershipByIdOrThrow(actingUser, project);
-
         projectMembershipActionValidator.validateDeletion(actingMembership, membershipToDelete);
-
         project.removeMember(membershipToDelete);
         projectRepository.save(project);
     }

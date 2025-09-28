@@ -535,7 +535,58 @@ class ProjectServiceTest {
             verify(projectMembershipActionValidator).validateDeletion(ownerMembership, memberToRemoveMembership);
         }
 
+        @Test
+        @DisplayName("removeMember_whenMemberTriesToRemoveThemselves_shouldRemoveSuccessfully")
+        void removeMember_whenMemberTriesToRemoveThemselves_shouldRemoveSuccessfully() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser();
+            User memberUser = TestDataFactory.createUserWithId(2L, "memberUser", "member@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            ProjectMember memberMembership = TestDataFactory.createProjectMember(memberUser, project, EProjectRole.MEMBER, 200L);
+            project.addMember(memberMembership);
+            assertThat(project.getMembers()).hasSize(2);
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            when(userService.findUserEntityById(memberUser.getId())).thenReturn(memberUser);
+            when(projectMemberRepository.findByUserAndProject(memberUser, project)).thenReturn(Optional.of(memberMembership));
+            doNothing().when(projectMembershipActionValidator).validateDeletion(memberMembership, memberMembership);
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+            // Act
+            projectService.deleteMembershipFromProject(projectId, memberUser.getId(), memberUser);
+
+            // Assert
+            verify(projectRepository).save(projectCaptor.capture());
+            Project savedProject = projectCaptor.getValue();
+            assertThat(savedProject.getMembers()).hasSize(1);
+            assertThat(savedProject.getMembers()).contains(ownerMembership);
+            verify(projectAuthorizationService, never()).checkProjectAdmin(any(User.class), any(Project.class));
+        }
+
+        @Test
+        @DisplayName("removeMember_whenOwnerTriesToRemoveThemselves_shouldThrowAccessDeniedException")
+        void removeMember_whenOwnerTriesToRemoveThemselves_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser();
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            when(userService.findUserEntityById(owner.getId())).thenReturn(owner);
+            when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
+
+            doThrow(new AccessDeniedException("OWNER cannot remove themselves from the project."))
+                    .when(projectMembershipActionValidator)
+                    .validateDeletion(ownerMembership, ownerMembership);
+
+            assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.deleteMembershipFromProject(projectId, owner.getId(), owner)
+            );
+
+            verify(projectRepository, never()).save(any(Project.class));
+        }
 
     }
 }

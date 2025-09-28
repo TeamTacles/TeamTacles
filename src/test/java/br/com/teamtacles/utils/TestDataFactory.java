@@ -22,12 +22,13 @@ import java.time.LocalDateTime;
 
 public class TestDataFactory {
 
-    // User Factory Methods
+    // ===================================================================================
+    // DOMÍNIO: User
+    // ===================================================================================
 
     public static User createValidUser() {
         return createUserWithId(1L, "testuser", "test@example.com");
     }
-
 
     public static User createUserWithId(Long id, String username, String email) {
         User user = new User();
@@ -58,15 +59,12 @@ public class TestDataFactory {
     }
 
     public static UserRequestRegisterDTO createValidUserRequestRegisterDTO() {
-        return new UserRequestRegisterDTO(
-                "testuser",
-                "test@gmail.com",
-                "Password123",
-                "Password123"
-        );
+        return new UserRequestRegisterDTO("testuser", "test@gmail.com", "Password123", "Password123");
     }
 
-    // Team Factory Methods
+    // ===================================================================================
+    // DOMÍNIO: Team
+    // ===================================================================================
 
     public static Team createTeam(User owner) {
         Team team = new Team("Team Tacles", "A great team", owner);
@@ -99,26 +97,20 @@ public class TestDataFactory {
     }
 
     public static TeamRequestRegisterDTO createTeamRequestRegisterDTO() {
-        TeamRequestRegisterDTO dto = new TeamRequestRegisterDTO();
-        dto.setName("New Awesome Team");
-        dto.setDescription("Description for the new team.");
-        return dto;
+        return new TeamRequestRegisterDTO("New Awesome Team", "Description for the new team.");
     }
-
 
     public static InvitedMemberRequestDTO createInviteMemberRequestDTO(String email, ETeamRole role) {
-        InvitedMemberRequestDTO dto = new InvitedMemberRequestDTO();
-        dto.setEmail(email);
-        dto.setRole(role);
-        return dto;
+        return new InvitedMemberRequestDTO(email, role);
     }
 
-
-    public static UpdateMemberRoleTeamRequestDTO createUpdateMemberRoleRequestDTO(ETeamRole newRole) {
-        UpdateMemberRoleTeamRequestDTO dto = new UpdateMemberRoleTeamRequestDTO();
-        dto.setNewRole(newRole);
-        return dto;
+    public static UpdateMemberRoleTeamRequestDTO createUpdateMemberRoleTeamRequestDTO(ETeamRole newRole) {
+        return new UpdateMemberRoleTeamRequestDTO(newRole);
     }
+
+    // ===================================================================================
+    // DOMÍNIO: Project
+    // ===================================================================================
 
     public static Project createMockProject(User owner) {
         Project project = new Project("Mock Project", "A mock project for testing purposes.", owner);
@@ -130,27 +122,23 @@ public class TestDataFactory {
             throw new RuntimeException("Failed to set ID on Project mock", e);
         }
 
-        ProjectMember ownerMembership = new ProjectMember(owner, project, EProjectRole.OWNER);
-        ownerMembership.acceptedInvitation();
-
-        try {
-            Field memberIdField = ProjectMember.class.getDeclaredField("id");
-            memberIdField.setAccessible(true);
-            ReflectionUtils.setField(memberIdField, ownerMembership, 999L);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException("Failed to set ID on ProjectMember mock", e);
-        }
+        ProjectMember ownerMembership = createProjectMember(owner, project, EProjectRole.OWNER, 999L);
         project.addMember(ownerMembership);
         return project;
     }
-    public static ProjectRequestUpdateDTO createProjectRequestUpdateDTO() {
-        return new ProjectRequestUpdateDTO("Updated Project Title", "Updated Description");
-    }
-    public static InviteProjectMemberRequestDTO createInviteProjectMemberRequestDTO(String email, EProjectRole role) {
-        InviteProjectMemberRequestDTO dto = new InviteProjectMemberRequestDTO();
-        dto.setEmail(email);
-        dto.setRole(role);
-        return dto;
+
+    public static ProjectMember createProjectMember(User user, Project project, EProjectRole role, Long mockId) {
+        ProjectMember member = new ProjectMember(user, project, role);
+        member.acceptedInvitation();
+
+        try {
+            Field idField = ProjectMember.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            ReflectionUtils.setField(idField, member, mockId);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set ID on ProjectMember mock", e);
+        }
+        return member;
     }
 
     public static ProjectMember createPendingProjectMember(User user, Project project, EProjectRole role) {
@@ -164,8 +152,14 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException("Failed to set ID on ProjectMember mock", e);
         }
-
         return member;
     }
 
+    public static ProjectRequestUpdateDTO createProjectRequestUpdateDTO() {
+        return new ProjectRequestUpdateDTO("Updated Project Title", "Updated Description");
+    }
+
+    public static InviteProjectMemberRequestDTO createInviteProjectMemberRequestDTO(String email, EProjectRole role) {
+        return new InviteProjectMemberRequestDTO(email, role);
+    }
 }

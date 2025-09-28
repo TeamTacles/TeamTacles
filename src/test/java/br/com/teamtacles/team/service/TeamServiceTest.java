@@ -213,8 +213,7 @@ public class TeamServiceTest {
             Team team = TestDataFactory.createTeam(owner);
             TeamMember ownerMembership = team.getMembers().iterator().next();
             TeamMember memberToUpdateMembership = TestDataFactory.createTeamMember(memberToUpdate, team, ETeamRole.MEMBER);
-            UpdateMemberRoleTeamRequestDTO roleDto = TestDataFactory.createUpdateMemberRoleRequestDTO(ETeamRole.ADMIN);
-
+            UpdateMemberRoleTeamRequestDTO roleDto = TestDataFactory.createUpdateMemberRoleTeamRequestDTO(ETeamRole.ADMIN);
             when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
             when(userService.findUserEntityById(memberToUpdate.getId())).thenReturn(memberToUpdate);
             when(teamMemberRepository.findByUserAndTeam(owner, team)).thenReturn(Optional.of(ownerMembership));
