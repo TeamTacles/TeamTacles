@@ -13,16 +13,16 @@ import lombok.NoArgsConstructor;
 @Schema(name = "ErrorResponse", description = "Standard format for API error responses")
 public class ErrorResponse {
 
-    @Schema(description = "Timestamp when the error occurred.", example = "2023-10-27T10:15:30")
+    @Schema(description = "Timestamp when the error occurred.")
     private LocalDateTime dateTime;
 
-    @Schema(description = "HTTP status code.", example = "400")
+    @Schema(description = "HTTP status code.")
     private int status;
 
-    @Schema(description = "A short, human-readable summary of the problem type.", example = "Bad Request")
+    @Schema(description = "A short, human-readable summary of the problem type.")
     private String errorTitle;
 
-    @Schema(description = "A detailed error message.", example = "Passwords do not match.")
+    @Schema(description = "A detailed error message." )
     private String errorMessage;
 
     public ErrorResponse(int status, String errorTitle, String errorMessage) {
