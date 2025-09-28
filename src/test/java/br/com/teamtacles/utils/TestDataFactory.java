@@ -5,6 +5,12 @@ import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
 import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
+import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
+import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
+import br.com.teamtacles.task.enumeration.ETaskRole;
+import br.com.teamtacles.task.enumeration.ETaskStatus;
+import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
@@ -19,6 +25,9 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TestDataFactory {
 
@@ -161,5 +170,44 @@ public class TestDataFactory {
 
     public static InviteProjectMemberRequestDTO createInviteProjectMemberRequestDTO(String email, EProjectRole role) {
         return new InviteProjectMemberRequestDTO(email, role);
+    }
+
+    // ===================================================================================
+    // DOMÍNIO: Task
+    // ===================================================================================
+
+    public static Task createMockTask(Project project, User owner, OffsetDateTime dueDate) {
+        Task task = new Task(project, "Mock Task", "A mock task for testing.", owner, dueDate);
+        try {
+            Field idField = Task.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            ReflectionUtils.setField(idField, task, 1L);
+
+            TaskAssignment ownerAssignment = new TaskAssignment(task, owner, ETaskRole.ASSIGNEE);
+
+            Set<TaskAssignment> assignments = new HashSet<>();
+            assignments.add(ownerAssignment);
+
+            Field assignmentsField = Task.class.getDeclaredField("assignments");
+            assignmentsField.setAccessible(true);
+            ReflectionUtils.setField(assignmentsField, task, assignments);
+
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set field on Task mock via reflection", e);
+        }
+
+        return task;
+    }
+
+    public static TaskRequestRegisterDTO createTaskRequestRegisterDTO() {
+        return new TaskRequestRegisterDTO("Task mock", "Task mock description", OffsetDateTime.now().plusDays(1));
+    }
+
+    public static UpdateTaskStatusRequestDTO createUpdateTaskStatusRequestDTO(ETaskStatus taskStatus, String completionComment) {
+        return new UpdateTaskStatusRequestDTO(taskStatus, completionComment);
+    }
+
+    public static UpdateTaskStatusRequestDTO createUpdateTaskStatusRequestDTO(ETaskStatus taskStatus) {
+        return new UpdateTaskStatusRequestDTO(taskStatus, null);
     }
 }

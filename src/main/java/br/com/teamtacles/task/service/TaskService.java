@@ -9,6 +9,7 @@ import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
+import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
@@ -91,7 +92,7 @@ public class TaskService {
 
     @BusinessActivityLog(action = "Update Task Status")
     @Transactional
-    public TaskResponseDTO updateTaskStatus(Long projectId, Long taskId, UpdateTaskStatusRequestDTO updateStatusDTO, User actingUser) {
+    public TaskUpdateStatusResponseDTO updateTaskStatus(Long projectId, Long taskId, UpdateTaskStatusRequestDTO updateStatusDTO, User actingUser) {
         Task task = taskProjectAssociationValidator.findAndValidate(taskId, projectId);
         taskAuthorizationService.checkChangeStatusPermission(actingUser, task);
 
@@ -104,7 +105,7 @@ public class TaskService {
         }
 
         Task updateTask = taskRepository.save(task);
-        return modelMapper.map(updateTask, TaskResponseDTO.class);
+        return modelMapper.map(updateTask, TaskUpdateStatusResponseDTO.class);
     }
 
     public PagedResponse<TaskResponseDTO> getTasksForProject(Pageable pageable, Long projectId, TaskFilterReportDTO filter, User actingUser) {

@@ -5,6 +5,7 @@ import br.com.teamtacles.common.exception.ErrorResponse;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
+import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -144,12 +145,12 @@ public class TaskController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{taskId}/status")
-    public ResponseEntity<TaskResponseDTO> updateTaskstatus (
+    public ResponseEntity<TaskUpdateStatusResponseDTO> updateTaskstatus (
             @PathVariable Long projectId,
             @PathVariable Long taskId,
             @RequestBody @Valid UpdateTaskStatusRequestDTO updateStatusDTO,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        TaskResponseDTO taskUpdate = taskService.updateTaskStatus(projectId, taskId, updateStatusDTO, authenticatedUser.getUser());
+        TaskUpdateStatusResponseDTO taskUpdate = taskService.updateTaskStatus(projectId, taskId, updateStatusDTO, authenticatedUser.getUser());
         return ResponseEntity.ok(taskUpdate);
     }
 
