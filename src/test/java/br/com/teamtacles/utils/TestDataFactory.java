@@ -13,6 +13,7 @@ import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.team.dto.request.InvitedMemberRequestDTO;
 import br.com.teamtacles.team.dto.request.TeamRequestRegisterDTO;
+import br.com.teamtacles.team.dto.request.TeamRequestUpdateDTO;
 import br.com.teamtacles.team.dto.request.UpdateMemberRoleTeamRequestDTO;
 import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.team.model.Team;
@@ -84,11 +85,16 @@ public class TestDataFactory {
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
-
         TeamMember ownerMembership = new TeamMember(owner, team, ETeamRole.OWNER);
         ownerMembership.acceptedInvitation();
+        try {
+            Field memberIdField = TeamMember.class.getDeclaredField("id");
+            memberIdField.setAccessible(true);
+            ReflectionUtils.setField(memberIdField, ownerMembership, 999L); // ID fixo para o dono
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set ID on owner's TeamMember mock", e);
+        }
         team.addMember(ownerMembership);
-
         return team;
     }
 
@@ -115,6 +121,32 @@ public class TestDataFactory {
 
     public static UpdateMemberRoleTeamRequestDTO createUpdateMemberRoleTeamRequestDTO(ETeamRole newRole) {
         return new UpdateMemberRoleTeamRequestDTO(newRole);
+    }
+
+    public static TeamMember createTeamMemberWithExpiredInvitation(User user, Team team, ETeamRole role) {
+        TeamMember member = new TeamMember(user, team, role);
+        String token = member.generateInvitation();
+
+        // simulando a expiração
+        try {
+            Field expiryField = TeamMember.class.getDeclaredField("invitationTokenExpiry");
+            expiryField.setAccessible(true);
+            ReflectionUtils.setField(expiryField, member, LocalDateTime.now().minusDays(1));
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to set expiry date on TeamMember mock", e);
+        }
+
+        return member;
+    }
+
+    public static Team createTeamWithActiveInviteLink(User owner) {
+        Team team = createTeam(owner);
+        team.generateInviteLinkToken(); // Gera o token e a data de expiração
+        return team;
+    }
+
+    public static TeamRequestUpdateDTO createTeamRequestUpdateDTO(String newName, String newDescription) {
+        return new TeamRequestUpdateDTO(newName, newDescription);
     }
 
     // ===================================================================================
