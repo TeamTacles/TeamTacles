@@ -506,5 +506,29 @@ public class TaskServiceTest {
             assertNotNull(savedTask);
             assertEquals(2, savedTask.getAssignments().size());
         }
+
+
+        @Test
+        @DisplayName("3.2 - shouldThrowAccessDeniedException_WhenAssigningUserWhoIsNotProjectMember")
+        void shouldThrowAccessDeniedException_WhenAssigningUserWhoIsNotProjectMember() {
+
+            //ARRANGE
+            Task task = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(1));
+
+            Set<TaskAssignmentRequestDTO> assignmentsUsersDTO = TestDataFactory.createTaskAssignmentRequestDTOSet();
+            List<Long> usersIds = assignmentsUsersDTO.stream().map(a -> a.getUserId()).toList();
+
+            when(taskProjectAssociationValidator.findAndValidate(task.getId(), project.getId())).thenReturn(task);
+            doNothing().when(taskAuthorizationService).checkEditPermission(taskCreator, task);
+            doNothing().when(taskAssignmentRoleValidator).validate(assignmentsUsersDTO);
+            doThrow(new AccessDeniedException("One or more users are not valid members of this project."))
+                    .when(projectService)
+                    .findProjectMembersFromIdList(project.getId(), usersIds);
+
+
+            //ACT & ASSERT
+            assertThrows(AccessDeniedException.class, () -> taskService.assignUsersToTask(project.getId(), task.getId(), assignmentsUsersDTO, taskCreator));
+            verify(taskRepository, never()).save(any(Task.class));
+        }
     }
 }
