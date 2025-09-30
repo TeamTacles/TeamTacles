@@ -2,6 +2,8 @@ package br.com.teamtacles.user.service;
 
 import br.com.teamtacles.common.exception.*;
 import br.com.teamtacles.infrastructure.email.EmailService;
+import br.com.teamtacles.project.repository.ProjectMemberRepository;
+import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
 import br.com.teamtacles.user.dto.response.UserResponseDTO;
@@ -32,12 +34,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import br.com.teamtacles.task.repository.TaskRepository;
+
+
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    ProjectRepository projectRepository;
+
+    @Mock
+    ProjectMemberRepository projectMemberRepository;
+
+    @Mock
+    private TaskRepository taskRepository;
+
     @Mock
     private RoleRepository roleRepository;
     @Mock
@@ -351,6 +366,7 @@ public class UserServiceTest {
 
             verify(userRepository, never()).save(any(User.class));
         }
+
     }
 
     // PASSWORD RESET
@@ -415,5 +431,8 @@ public class UserServiceTest {
             // Then
             verify(userRepository, times(1)).delete(userToDelete);
         }
-    }
+
+
+
+        }
 }

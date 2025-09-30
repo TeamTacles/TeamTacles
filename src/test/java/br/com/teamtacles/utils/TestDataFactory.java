@@ -5,8 +5,10 @@ import br.com.teamtacles.project.dto.request.ProjectRequestUpdateDTO;
 import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
+import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
 import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
 import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
+import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
 import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
@@ -28,6 +30,7 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class TestDataFactory {
@@ -241,5 +244,32 @@ public class TestDataFactory {
 
     public static UpdateTaskStatusRequestDTO createUpdateTaskStatusRequestDTO(ETaskStatus taskStatus) {
         return new UpdateTaskStatusRequestDTO(taskStatus, null);
+    }
+
+    public static Set<TaskAssignmentRequestDTO> createTaskAssignmentRequestDTOSet() {
+        Set<TaskAssignmentRequestDTO> assignmentsUsers = new HashSet<>();
+        assignmentsUsers.add(new TaskAssignmentRequestDTO(1L, ETaskRole.ASSIGNEE));
+        assignmentsUsers.add(new TaskAssignmentRequestDTO(2L, ETaskRole.ASSIGNEE));
+        return assignmentsUsers;
+    }
+
+    public static Set<User> createAssignmentusers(List<Long> usersIds) {
+        Set<User> assignmetnsUsers = new HashSet<>();;
+
+        for (Long id : usersIds) {
+            assignmetnsUsers.add(createUserWithId(id, "testuser+" + id, "test+" + id + "@example.com"));
+        }
+
+        return assignmetnsUsers;
+    }
+
+    public static Set<UserAssignmentResponseDTO> createAssignmentusersDTO(Set<User> users) {
+        Set<UserAssignmentResponseDTO> assignmetnsUsers = new HashSet<>();;
+
+        for (User user : users) {
+            assignmetnsUsers.add(new UserAssignmentResponseDTO(user.getId(), user.getUsername(), ETaskRole.ASSIGNEE));
+        }
+
+        return assignmetnsUsers;
     }
 }

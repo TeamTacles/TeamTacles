@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(of = {"task", "user"})
 @ToString(exclude = {"task", "user"})
 @Entity
 @Table(name = "task_assignments")
