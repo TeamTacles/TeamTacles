@@ -86,7 +86,7 @@ class ProjectServiceTest {
 
     //pedron depois verificar esse teste juntamente com a entidade project e seu service
     @Test
-    @DisplayName("createProject should create project with owner as member")
+    @DisplayName("1.1 - createProject should create project with owner as member")
     void createProject_whenValidDataAndAuthenticatedUser_shouldCreateProjectWithOwnerMember() {
         // Arrange
         ProjectRequestRegisterDTO requestDTO = new ProjectRequestRegisterDTO("New Project", "Project Description");
@@ -133,7 +133,7 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("createProject should throw ResourceAlreadyExistsException when title already exists")
+    @DisplayName("1.2 - createProject should throw ResourceAlreadyExistsException when title already exists")
     void createProject_whenProjectTitleAlreadyExistsForUser_shouldThrowResourceAlreadyExistsException() {
         // Arrange
         ProjectRequestRegisterDTO requestDTO = new ProjectRequestRegisterDTO("Existing Project", "Some description");
@@ -155,11 +155,11 @@ class ProjectServiceTest {
     }
 
     @Nested
-    @DisplayName("Project Update Tests")
+    @DisplayName("2 - Project Update Tests")
     class ProjectUpdateTests {
 
         @Test
-        @DisplayName("should update and return ProjectResponseDTO when user is owner and data is valid")
+        @DisplayName("2.1 - should update and return ProjectResponseDTO when user is owner and data is valid")
         void updateProject_whenUserIsOwnerAndDataIsValid_shouldUpdateAndReturnProjectDTO() {
             // Arrange
             long projectId = 1L;
@@ -191,7 +191,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw AccessDeniedException when user is not a project member")
+        @DisplayName("2.2 - should throw AccessDeniedException when user is not a project member")
         void updateProject_whenUserIsNotMember_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -213,7 +213,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw AccessDeniedException when user is a member but not admin or owner")
+        @DisplayName("2.3 - should throw AccessDeniedException when user is a member but not admin or owner")
         void updateProject_whenUserIsMemberButNotAdminOrOwner_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -238,7 +238,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw ResourceNotFoundException when project does not exist")
+        @DisplayName("2.4 - should throw ResourceNotFoundException when project does not exist")
         void updateProject_whenProjectDoesNotExist_shouldThrowResourceNotFoundException() {
             // Arrange
             long nonExistentProjectId = 999L;
@@ -260,11 +260,11 @@ class ProjectServiceTest {
     }
 
     @Nested
-    @DisplayName("Project Deletion Tests")
+    @DisplayName("3 - Project Deletion Tests")
     class ProjectDeletionTests {
 
         @Test
-        @DisplayName("should delete project successfully when user is the owner")
+        @DisplayName("3.1 - should delete project successfully when user is the owner")
         void deleteProject_whenUserIsOwner_shouldDeleteProjectSuccessfully() {
             // Arrange
             long projectId = 1L;
@@ -288,7 +288,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw AccessDeniedException when user is admin but not the owner")
+        @DisplayName("3.2 - should throw AccessDeniedException when user is admin but not the owner")
         void deleteProject_whenUserIsAdminButNotOwner_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -310,7 +310,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw ResourceNotFoundException when project does not exist")
+        @DisplayName("3.3 - should throw ResourceNotFoundException when project does not exist")
         void deleteProject_whenProjectDoesNotExist_shouldThrowResourceNotFoundException() {
             // Arrange
             long nonExistentProjectId = 999L;
@@ -327,11 +327,11 @@ class ProjectServiceTest {
         }
     }
     @Nested
-    @DisplayName("Project Member Management Tests")
+    @DisplayName("4 - Project Member Management Tests")
     class ProjectMemberManagementTests {
 
         @Test
-        @DisplayName("should create and send pending invite when user is admin and invitee is not a member")
+        @DisplayName("4.1 - should create and send pending invite when user is admin and invitee is not a member")
         void inviteMember_whenUserIsAdminAndInviteeIsNotMember_shouldCreatePendingInvite() {
             // Arrange
             long projectId = 1L;
@@ -375,7 +375,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should throw AccessDeniedException when inviting user is a regular member")
+        @DisplayName("4.2 - should throw AccessDeniedException when inviting user is a regular member")
         void inviteMember_whenUserIsRegularMember_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -398,7 +398,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("acceptInvitationFromEmail_whenTokenIsValid_shouldUpdateMembershipToAccepted")
+        @DisplayName("4.3 - acceptInvitationFromEmail_whenTokenIsValid_shouldUpdateMembershipToAccepted")
         void acceptInvitationFromEmail_whenTokenIsValid_shouldUpdateMembershipToAccepted() {
             // Arrange
             User owner = TestDataFactory.createValidUser();
@@ -426,7 +426,7 @@ class ProjectServiceTest {
             verify(projectTokenValidator).validateInvitationEmailToken(pendingMember);
         }
         @Test
-        @DisplayName("acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException")
+        @DisplayName("4.4 - acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException")
         void acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException() {
             // Arrange
             String invalidToken = "non-existent-token-123";
@@ -441,7 +441,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("updateMemberRole_whenUserIsOwnerAndTargetIsMember_shouldUpdateRoleSuccessfully")
+        @DisplayName("4.5 - updateMemberRole_whenUserIsOwnerAndTargetIsMember_shouldUpdateRoleSuccessfully")
         void updateMemberRole_whenUserIsOwnerAndTargetIsMember_shouldUpdateRoleSuccessfully() {
             // Arrange
             long projectId = 1L;
@@ -475,7 +475,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("updateMemberRole_whenUserIsAdminAndTargetIsOwner_shouldThrowAccessDeniedException")
+        @DisplayName("4.6 - updateMemberRole_whenUserIsAdminAndTargetIsOwner_shouldThrowAccessDeniedException")
         void updateMemberRole_whenUserIsAdminAndTargetIsOwner_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -504,7 +504,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("removeMember_whenUserIsOwnerAndTargetIsMember_shouldRemoveMemberSuccessfully")
+        @DisplayName("4.7 - removeMember_whenUserIsOwnerAndTargetIsMember_shouldRemoveMemberSuccessfully")
         void removeMember_whenUserIsOwnerAndTargetIsMember_shouldRemoveMemberSuccessfully() {
             // Arrange
             long projectId = 1L;
@@ -536,7 +536,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("removeMember_whenMemberTriesToRemoveThemselves_shouldRemoveSuccessfully")
+        @DisplayName("4.8 - removeMember_whenMemberTriesToRemoveThemselves_shouldRemoveSuccessfully")
         void removeMember_whenMemberTriesToRemoveThemselves_shouldRemoveSuccessfully() {
             // Arrange
             long projectId = 1L;
@@ -565,7 +565,7 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("removeMember_whenOwnerTriesToRemoveThemselves_shouldThrowAccessDeniedException")
+        @DisplayName("4.9 - removeMember_whenOwnerTriesToRemoveThemselves_shouldThrowAccessDeniedException")
         void removeMember_whenOwnerTriesToRemoveThemselves_shouldThrowAccessDeniedException() {
             // Arrange
             long projectId = 1L;
@@ -586,6 +586,121 @@ class ProjectServiceTest {
             );
 
             verify(projectRepository, never()).save(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("4.10 - should throw ResourceAlreadyExistsException when inviting a user who is already a member")
+        void inviteMember_whenInviteeIsAlreadyAMember_shouldThrowResourceAlreadyExistsException() {
+            // Arrange
+            long projectId = 1L;
+            User inviter = authenticatedUser;
+            User existingMember = TestDataFactory.createUserWithId(2L, "existingMember", "member@example.com");
+            Project project = TestDataFactory.createMockProject(inviter);
+            ProjectMember member = new ProjectMember(existingMember, project, EProjectRole.MEMBER);
+            member.acceptedInvitation();
+            project.addMember(member);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO(existingMember.getEmail(), EProjectRole.MEMBER);
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(inviter, project);
+            when(userService.findUserEntityByEmail(existingMember.getEmail())).thenReturn(existingMember);
+            String expectedErrorMessage = "User is already a member of this project.";
+            doThrow(new ResourceAlreadyExistsException(expectedErrorMessage))
+                    .when(projectMembershipValidator).validateNewMember(existingMember, project);
+            // Act & Assert
+            ResourceAlreadyExistsException exception = assertThrows(
+                    ResourceAlreadyExistsException.class,
+                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter)
+            );
+            assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
+            verify(projectRepository, never()).save(any(Project.class));
+            verifyNoInteractions(emailService);
+        }
+
+        @Test
+        @DisplayName("4.11 - should throw AccessDeniedException when invitation token is expired")
+        void acceptInvitationFromEmail_whenTokenIsExpired_shouldThrowAccessDeniedException() {
+            // Arrange
+            User owner = TestDataFactory.createValidUser();
+            User invitee = TestDataFactory.createUserWithId(2L, "invitee", "invitee@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember expiredMember = TestDataFactory.createPendingProjectMember(invitee, project, EProjectRole.MEMBER);
+            String expiredToken = expiredMember.getInvitationToken();
+            when(projectMemberRepository.findByInvitationToken(expiredToken)).thenReturn(Optional.of(expiredMember));
+            String expectedErrorMessage = "Invitation token has expired.";
+            doThrow(new AccessDeniedException(expectedErrorMessage))
+                    .when(projectTokenValidator).validateInvitationEmailToken(expiredMember);
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.acceptInvitationFromEmail(expiredToken)
+            );
+            assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
+            verify(projectTokenValidator).validateInvitationEmailToken(expiredMember);
+            verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        }
+
+        @Test
+        @DisplayName("4.12 - updateMemberRole should throw AccessDeniedException when user tries to change their own role")
+        void updateMemberRole_whenUserTriesToUpdateTheirOwnRole_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser();
+            User adminUser = TestDataFactory.createUserWithId(3L, "adminUser", "admin@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+            ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
+            ProjectMember adminMembership = new ProjectMember(adminUser, project, EProjectRole.ADMIN);
+            project.addMember(adminMembership);
+            UpdateMemberRoleProjectRequestDTO requestDTO = new UpdateMemberRoleProjectRequestDTO(EProjectRole.OWNER);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(adminUser, project);
+            when(userService.findUserEntityById(adminUser.getId())).thenReturn(adminUser);
+            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
+            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
+
+            String expectedErrorMessage = "Users cannot change their own role.";
+            doThrow(new AccessDeniedException(expectedErrorMessage))
+                    .when(projectMembershipActionValidator)
+                    .validateRoleUpdate(adminMembership, adminMembership, EProjectRole.OWNER);
+
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.updateMemberRole(projectId, adminUser.getId(), requestDTO, adminUser)
+            );
+            assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
+            verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        }
+
+        @Test
+        @DisplayName("4.13 - inviteMember should throw ResourceNotFoundException when invitee user does not exist")
+        void inviteMember_whenInviteeUserDoesNotExist_shouldThrowResourceNotFoundException() {
+            // Arrange
+            long projectId = 1L;
+            User inviter = authenticatedUser;
+            String nonExistentEmail = "ghost@example.com";
+
+            Project project = TestDataFactory.createMockProject(inviter);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO(nonExistentEmail, EProjectRole.MEMBER);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(inviter, project);
+            String expectedErrorMessage = "User not found with email: " + nonExistentEmail;
+            when(userService.findUserEntityByEmail(nonExistentEmail))
+                    .thenThrow(new ResourceNotFoundException(expectedErrorMessage));
+
+            // Act & Assert
+            ResourceNotFoundException exception = assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter)
+            );
+
+            assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
+
+            verify(projectRepository, never()).save(any(Project.class));
+            verifyNoInteractions(projectInvitationValidator);
+            verifyNoInteractions(projectMembershipValidator);
+            verifyNoInteractions(emailService);
         }
 
     }

@@ -237,9 +237,10 @@ public class ProjectService {
     public void inviteMemberByEmail(Long projectId, InviteProjectMemberRequestDTO requestDTO, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
         projectAuthorizationService.checkProjectAdmin(actingUser, project);
+        User userToInvite = userService.findUserEntityByEmail(requestDTO.getEmail());
+
         projectInvitationValidator.validateRole(requestDTO.getRole());
 
-        User userToInvite = userService.findUserEntityByEmail(requestDTO.getEmail());
 
         projectMembershipValidator.validateNewMember(userToInvite, project);
 
