@@ -604,7 +604,7 @@ public class TaskServiceTest {
             assertEquals(updateDTO.getDescription(), savedTask.getDescription());
             assertEquals(existingTask.getDueDate(), savedTask.getDueDate());
         }
-        
+
         @Test
         @DisplayName("4.2 - shouldNotUpdateTaskDetails_WhenFieldsAreNull")
         void shouldNotUpdateTaskDetails_WhenFieldsAreNull() {
@@ -631,6 +631,72 @@ public class TaskServiceTest {
             assertNotNull(savedTask.getDescription());
             assertEquals(existingTask.getDescription(), savedTask.getDescription());
             assertEquals(existingTask.getDueDate(), savedTask.getDueDate());
+        }
+
+        @Test
+        @DisplayName("4.3 - shouldThrowAccessDeniedException_WhenUserLacksEditPermissionToUpdate")
+        void shouldThrowAccessDeniedException_WhenUserLacksEditPermissionToUpdate() {
+            // ARRANGE
+            Task existingTask = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(5));
+            Long taskId = existingTask.getId();
+
+            User unauthorizedUser = TestDataFactory.createUserWithId(99L, "unauthorized", "unauthorized@gmail.com");
+
+            TaskRequestUpdateDTO updateDTO = new TaskRequestUpdateDTO();
+            updateDTO.setTitle("Attempted Malicious Update");
+
+            when(taskProjectAssociationValidator.findAndValidate(taskId, project.getId())).thenReturn(existingTask);
+
+            doThrow(new AccessDeniedException("User lacks permission to edit this task."))
+                    .when(taskAuthorizationService)
+                    .checkEditPermission(unauthorizedUser, existingTask);
+
+            // ACT & ASSERT
+
+            assertThrows(AccessDeniedException.class,
+                    () -> taskService.updateTaskDetails(project.getId(), taskId, updateDTO, unauthorizedUser));
+
+            verify(taskRepository, never()).save(any(Task.class));
+        }
+
+        @Test
+        @DisplayName("4.4 - shouldDeleteTaskSuccessfully_WhenUserHasEditPermission")
+        void shouldDeleteTaskSuccessfully_WhenUserHasEditPermission() {
+            // ARRANGE
+            Task existingTask = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(5));
+            Long taskId = existingTask.getId();
+
+            when(taskProjectAssociationValidator.findAndValidate(taskId, project.getId())).thenReturn(existingTask);
+            doNothing().when(taskAuthorizationService).checkEditPermission(taskCreator, existingTask);
+
+            // ACT
+            taskService.deleteTaskById(project.getId(), taskId, taskCreator);
+
+            // ASSERT
+            verify(taskRepository, times(1)).delete(existingTask);
+        }
+
+
+        @Test
+        @DisplayName("4.5 - shouldThrowAccessDeniedException_WhenUserLacksPermissionToDelete")
+        void shouldThrowAccessDeniedException_WhenUserLacksPermissionToDelete() {
+            // ARRANGE
+            Task existingTask = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(5));
+            Long taskId = existingTask.getId();
+
+            User unauthorizedUser = TestDataFactory.createUserWithId(99L, "hacker.man", "hacker@gmail.com");
+
+            when(taskProjectAssociationValidator.findAndValidate(taskId, project.getId())).thenReturn(existingTask);
+
+            doThrow(new AccessDeniedException("User does not have permission to delete this task."))
+                    .when(taskAuthorizationService)
+                    .checkEditPermission(unauthorizedUser, existingTask);
+
+            // ACT & ASSERT
+            assertThrows(AccessDeniedException.class,
+                    () -> taskService.deleteTaskById(project.getId(), taskId, unauthorizedUser));
+
+            verify(taskRepository, never()).delete(any(Task.class));
         }
 
 
