@@ -272,4 +272,11 @@ public class TestDataFactory {
 
         return assignmetnsUsers;
     }
+
+    public static Set<TaskAssignmentRequestDTO> createTaskAssignmentRequestDTOWithOwnerRole() {
+        TaskAssignmentRequestDTO assignment = new TaskAssignmentRequestDTO();
+        assignment.setUserId(2L);
+        assignment.setTaskRole(ETaskRole.OWNER);
+        return Set.of(assignment);
+    }
 }

@@ -7,6 +7,7 @@ import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.task.dto.request.TaskAssignmentRequestDTO;
 import br.com.teamtacles.task.dto.request.TaskRequestRegisterDTO;
+import br.com.teamtacles.task.dto.request.TaskRequestUpdateDTO;
 import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
@@ -74,7 +75,7 @@ public class TaskServiceTest {
     private TaskRequestRegisterDTO taskRequestDTO;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         taskCreator = TestDataFactory.createValidUser();
         project = TestDataFactory.createMockProject(taskCreator);
         taskRequestDTO = TestDataFactory.createTaskRequestRegisterDTO();
@@ -480,7 +481,7 @@ public class TaskServiceTest {
 
             Set<TaskAssignmentRequestDTO> assignmentsUsersDTO = TestDataFactory.createTaskAssignmentRequestDTOSet();
             List<Long> usersIds = assignmentsUsersDTO.stream().map(a -> a.getUserId()).toList();
-            Set<User> assingmentsUsers= TestDataFactory.createAssignmentusers(usersIds);
+            Set<User> assingmentsUsers = TestDataFactory.createAssignmentusers(usersIds);
             Set<UserAssignmentResponseDTO> assignmentsUserDTO = TestDataFactory.createAssignmentusersDTO(assingmentsUsers);
 
             when(taskProjectAssociationValidator.findAndValidate(task.getId(), project.getId())).thenReturn(task);
@@ -530,5 +531,108 @@ public class TaskServiceTest {
             assertThrows(AccessDeniedException.class, () -> taskService.assignUsersToTask(project.getId(), task.getId(), assignmentsUsersDTO, taskCreator));
             verify(taskRepository, never()).save(any(Task.class));
         }
+
+        @Test
+        @DisplayName("3.3 - shouldThrowIllegalArgumentException_WhenAssigningOwnerRoleViaAssignments")
+        void shouldThrowIllegalArgumentException_WhenAssigningOwnerRoleViaAssignments() {
+
+            // ARRANGE
+            Task task = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(1));
+            Set<TaskAssignmentRequestDTO> assignmentsWithOwnerRole = TestDataFactory.createTaskAssignmentRequestDTOWithOwnerRole();
+
+            when(taskProjectAssociationValidator.findAndValidate(task.getId(), project.getId())).thenReturn(task);
+            doNothing().when(taskAuthorizationService).checkEditPermission(taskCreator, task);
+
+            doThrow(new IllegalArgumentException("The OWNER role cannot be assigned via this method."))
+                    .when(taskAssignmentRoleValidator)
+                    .validate(assignmentsWithOwnerRole);
+            // ACT & ASSERT
+            assertThrows(IllegalArgumentException.class,
+                    () -> taskService.assignUsersToTask(project.getId(), task.getId(), assignmentsWithOwnerRole, taskCreator));
+            verify(taskRepository, never()).save(any(Task.class));
+        }
+
+        @Test
+        @DisplayName("3.4 - shouldThrowAccessDeniedException_WhenUserLacksEditPermissionForAssignments")
+        void shouldThrowAccessDeniedException_WhenUserLacksEditPermissionForAssignments() {
+            // ARRANGE
+            Task task = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(1));
+            User unauthorizedUser = TestDataFactory.createUserWithId(99L, "member", "member@gmail.com");
+
+            Set<TaskAssignmentRequestDTO> assignmentsUsersDTO = TestDataFactory.createTaskAssignmentRequestDTOSet();
+
+            when(taskProjectAssociationValidator.findAndValidate(task.getId(), project.getId())).thenReturn(task);
+
+            doThrow(new AccessDeniedException("User does not have permission to edit this task."))
+                    .when(taskAuthorizationService)
+                    .checkEditPermission(unauthorizedUser, task);
+            // ACT & ASSERT
+            assertThrows(AccessDeniedException.class,
+                    () -> taskService.assignUsersToTask(project.getId(), task.getId(), assignmentsUsersDTO, unauthorizedUser));
+            verify(taskRepository, never()).save(any(Task.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("4. Task Details Update & Deletion Tests")
+    class TaskDetailsUpdateTests {
+
+        @Test
+        @DisplayName("4.1 - shouldUpdateTaskDetails_WhenUserHasEditPermission")
+        void shouldUpdateTaskDetails_WhenUserHasEditPermission() {
+            // ARRANGE
+            Task existingTask = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(5));
+            Long taskId = existingTask.getId();
+
+            TaskRequestUpdateDTO updateDTO = new TaskRequestUpdateDTO();
+            updateDTO.setTitle("New Updated Title");
+            updateDTO.setDescription("New updated description.");
+
+            when(taskProjectAssociationValidator.findAndValidate(taskId, project.getId())).thenReturn(existingTask);
+            doNothing().when(taskAuthorizationService).checkEditPermission(taskCreator, existingTask);
+            when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+
+            // ACT
+            taskService.updateTaskDetails(project.getId(), taskId, updateDTO, taskCreator);
+
+            // ASSERT
+            verify(taskRepository).save(taskCaptor.capture());
+            Task savedTask = taskCaptor.getValue();
+            assertEquals(updateDTO.getTitle(), savedTask.getTitle());
+            assertEquals(updateDTO.getDescription(), savedTask.getDescription());
+            assertEquals(existingTask.getDueDate(), savedTask.getDueDate());
+        }
+        
+        @Test
+        @DisplayName("4.2 - shouldNotUpdateTaskDetails_WhenFieldsAreNull")
+        void shouldNotUpdateTaskDetails_WhenFieldsAreNull() {
+            // ARRANGE
+            Task existingTask = TestDataFactory.createMockTask(project, taskCreator, OffsetDateTime.now().plusDays(5));
+            existingTask.setTitle("Original Title");
+            existingTask.setDescription("Original Description");
+            Long taskId = existingTask.getId();
+
+            TaskRequestUpdateDTO updateDTOWithNulls = new TaskRequestUpdateDTO();
+            updateDTOWithNulls.setTitle("Title Was Updated");
+            when(taskProjectAssociationValidator.findAndValidate(taskId, project.getId())).thenReturn(existingTask);
+            doNothing().when(taskAuthorizationService).checkEditPermission(taskCreator, existingTask);
+            when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+
+            // ACT
+            taskService.updateTaskDetails(project.getId(), taskId, updateDTOWithNulls, taskCreator);
+
+            // ASSERT
+            verify(taskRepository).save(taskCaptor.capture());
+            Task savedTask = taskCaptor.getValue();
+            assertEquals(updateDTOWithNulls.getTitle(), savedTask.getTitle());
+            assertNotNull(savedTask.getDescription());
+            assertEquals(existingTask.getDescription(), savedTask.getDescription());
+            assertEquals(existingTask.getDueDate(), savedTask.getDueDate());
+        }
+
+
     }
 }
