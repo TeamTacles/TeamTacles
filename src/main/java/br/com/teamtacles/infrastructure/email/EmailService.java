@@ -63,7 +63,7 @@ public class EmailService {
         try {
             Context context = new Context();
             context.setVariable("teamName", teamName);
-            context.setVariable("invitationUrl", baseUrl + "/api/team/accept-invite?token=" + token);
+            context.setVariable("invitationUrl", baseUrl + "/api/team/accept-invite-email?token=" + token);
 
             String htmlContent = templateEngine.process("team-invitation-email", context);
 
@@ -91,7 +91,7 @@ public class EmailService {
         try {
             Context context = new Context();
             context.setVariable("projectName", projectName);
-            context.setVariable("invitationUrl", baseUrl + "/api/project/accept-invite?token=" + token);
+            context.setVariable("invitationUrl", baseUrl + "/api/project/accept-invite-email?token=" + token);
 
             String htmlContent = templateEngine.process("project-invitation-email", context);
 

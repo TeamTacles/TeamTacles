@@ -119,6 +119,10 @@ public class Task {
         return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
     }
 
+    public void transferOwnership(User newOwner) {
+        this.owner = newOwner;
+    }
+
     public Set<TaskAssignment> getAssignments() {
         return Collections.unmodifiableSet(assignments);
     }

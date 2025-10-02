@@ -84,6 +84,10 @@ public class Team {
         this.invitationTokenExpiry = null;
     }
 
+    public void transferOwnership(User newOwner) {
+        this.owner = newOwner;
+    }
+
     public Set<TeamMember> getMembers() {
         return Collections.unmodifiableSet(members);
     }

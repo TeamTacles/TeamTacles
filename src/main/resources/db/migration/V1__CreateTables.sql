@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS teams (
     owner_id BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     invitation_token VARCHAR(255) UNIQUE,
-    invitation_token_expiry TIMESTAMP
+    invitation_token_expiry TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS team_members (
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS team_members (
     invitation_token VARCHAR(255),
     invitation_token_expiry TIMESTAMP,
     UNIQUE (user_id, team_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
 
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS project_members (
     project_role VARCHAR(50) NOT NULL,
     invitation_token VARCHAR(255) UNIQUE,
     invitation_token_expiry TIMESTAMP,
-    CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES project(id),
+    CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
     CONSTRAINT fk_pm_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT uq_project_user UNIQUE (project_id, user_id)
 );
@@ -91,6 +92,6 @@ CREATE TABLE task_assignments (
     role VARCHAR(30) NOT NULL, -- COLUNA ADICIONADA
     assigned_at TIMESTAMP WITH TIME ZONE NOT NULL,
     CONSTRAINT fk_assignment_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-    CONSTRAINT fk_assignment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_assignment_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT uq_task_user_assignment UNIQUE (task_id, user_id)
 );

@@ -6,6 +6,7 @@ import br.com.teamtacles.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,9 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     Page<ProjectMember> findByUserAndAcceptedInviteTrue(User user, Pageable pageable);
     Page<ProjectMember> findByProjectAndAcceptedInviteTrue(Project project, Pageable pageable);
     Optional<ProjectMember> findByInvitationToken(String token);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    void deleteAllByUser(User user);
 
     @Query("SELECT pm.user FROM ProjectMember pm WHERE pm.project.id = :projectId AND pm.user.id IN :userIds AND pm.acceptedInvite = true")
     Set<User> findProjectMembersAsUsers(@Param("projectId") Long projectId, @Param("userIds") List<Long> userIds);

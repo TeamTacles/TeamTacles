@@ -21,6 +21,7 @@ import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.repository.TaskRepository;
+import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.service.TeamAuthorizationService;
@@ -327,6 +328,43 @@ public class ProjectService {
         projectRepository.save(project);
     }
 
+    @Transactional
+    public void handleOwnerDeletion(User user) {
+        List<Project> projects = projectRepository.findAllByOwner(user);
+
+        for(Project project : projects) {
+            List<ProjectMember> members = project.getMembers().stream()
+                    .filter(m -> !m.getUser().equals(user))
+                    .toList();
+
+            if(members.isEmpty()) {
+                projectRepository.delete(project);
+            } else {
+                transferProjectOwnership(members, project);
+            }
+        }
+    }
+
+    @Transactional
+    public void transferProjectOwnership(List<ProjectMember> members, Project project) {
+        Optional<ProjectMember> newOwnerMember = members.stream()
+                .filter(m -> m.getProjectRole().equals(EProjectRole.ADMIN))
+                .min(Comparator.comparing(ProjectMember::getJoinedAt));
+
+        if(newOwnerMember.isEmpty()) {
+            newOwnerMember = members.stream()
+                    .min(Comparator.comparing(ProjectMember::getJoinedAt));
+        }
+
+        newOwnerMember.ifPresent(member -> {
+            User newOwner = member.getUser();
+            project.transferOwnership(newOwner);
+            member.changeRole(EProjectRole.OWNER);
+            projectMemberRepository.save(member);
+            projectRepository.save(project);
+        });
+    }
+
     public Set<User> findProjectMembersFromIdList(Long projectId, List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return new HashSet<>();
@@ -364,6 +402,11 @@ public class ProjectService {
 
         long totalCount = tasks.size();
         return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
+    }
+
+    @Transactional
+    public void removeAllMembershipsForUser(User user) {
+        projectMemberRepository.deleteAllByUser(user);
     }
 
     public Set<Task> findFilteredTasksForProject(Long projectId, TaskFilterReportDTO filter) {

@@ -3,6 +3,7 @@ package br.com.teamtacles.task.repository;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,8 @@ import br.com.teamtacles.task.enumeration.ETaskStatus;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByProject(Pageable pageable, Project project);
+
+    List<Task> findAllByOwner(User owner);
 
     @Query("SELECT t FROM Task t WHERE t.project.id = :projectId " +
             "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +

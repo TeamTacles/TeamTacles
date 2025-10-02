@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Optional;
 
@@ -18,6 +19,8 @@ import java.util.Optional;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     boolean existsByTitleIgnoreCaseAndOwner(String title, User owner);
     Optional<Project> findByInvitationToken(String token);
+
+    List<Project> findAllByOwner(User owner);
 
     @Query("SELECT DISTINCT p FROM Project p " +
             "JOIN FETCH p.members m " +

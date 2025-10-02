@@ -4,7 +4,9 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
+import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
+import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.*;
@@ -31,7 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -200,6 +204,37 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
+    @Transactional
+    public void handleOwnerDeletion(User user) {
+        List<Task> tasks = taskRepository.findAllByOwner(user);
+
+        for(Task task : tasks) {
+            List<TaskAssignment> members = task.getAssignments().stream()
+                    .filter(m -> !m.getUser().equals(user))
+                    .toList();
+
+            if(members.isEmpty()) {
+                taskRepository.delete(task);
+            } else {
+                transferProjectOwnership(members, task);
+            }
+        }
+    }
+
+    @Transactional
+    public void transferProjectOwnership(List<TaskAssignment> members, Task task) {
+        Optional<TaskAssignment> newOwnerMember = members.stream()
+                .min(Comparator.comparing(TaskAssignment::getAssignedAt));
+
+        newOwnerMember.ifPresent(member -> {
+            User newOwner = member.getUser();
+            task.transferOwnership(newOwner);
+            member.changeRole(ETaskRole.OWNER);
+            taskAssignmentRepository.save(member);
+            taskRepository.save(task);
+        });
+    }
+
     @BusinessActivityLog(action = "Update Task Details")
     @Transactional
     public TaskResponseDTO updateTaskDetails(Long projectId, Long taskId, TaskRequestUpdateDTO taskUpdateDTO, User actingUser) {
@@ -220,6 +255,11 @@ public class TaskService {
         Task updatedTask = taskRepository.save(task);
         return modelMapper.map(updatedTask, TaskResponseDTO.class);
 
+    }
+
+    @Transactional
+    public void removeAllMembershipsForUser(User user) {
+        taskAssignmentRepository.deleteAllByUser(user);
     }
 
     private TaskAssignment findByTaskAndUserOrThrow(Task task, User userToRemove) {

@@ -6,6 +6,7 @@ import br.com.teamtacles.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.Optional;
 
@@ -15,4 +16,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     Page<TeamMember> findByTeamAndAcceptedInviteTrue(Team team, Pageable pageable);
     Page<TeamMember> findByUser(User user, Pageable pageable);
     Optional<TeamMember> findByInvitationToken(String token);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    void deleteAllByUser(User user);
 }

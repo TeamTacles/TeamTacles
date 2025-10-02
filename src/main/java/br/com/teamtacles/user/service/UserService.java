@@ -3,6 +3,9 @@ package br.com.teamtacles.user.service;
 import br.com.teamtacles.common.exception.*;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.infrastructure.email.EmailService;
+import br.com.teamtacles.project.service.ProjectService;
+import br.com.teamtacles.task.service.TaskService;
+import br.com.teamtacles.team.service.TeamService;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
 import br.com.teamtacles.user.dto.response.UserResponseDTO;
@@ -38,7 +41,7 @@ public class UserService {
 
     private final ModelMapper modelMapper;
 
-    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder,
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        ModelMapper modelMapper, RoleRepository roleRepository,
                        PasswordMatchValidator passwordMatchValidator, EmailService emailService,
                        UserUniquenessValidator userUniquenessValidator,
@@ -151,7 +154,11 @@ public class UserService {
     @BusinessActivityLog(action = "Delete User Account")
     @Transactional
     public void deleteUser(User user) {
-        userRepository.delete(user);
+        User managedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + user.getId() + " not found for deletion."));
+
+        managedUser.prepareForDeletion();
+        userRepository.delete(managedUser);
     }
 
     public User findUserEntityById(Long userId) {

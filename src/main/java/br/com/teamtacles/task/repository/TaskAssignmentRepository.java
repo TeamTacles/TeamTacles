@@ -15,6 +15,9 @@ import java.util.Set;
 public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, Long> {
     Optional<TaskAssignment> findByTaskAndUser(Task task, User user);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    void deleteAllByUser(User user);
+
     @Query("SELECT ta FROM TaskAssignment ta WHERE ta.task.id = :taskId AND ta.user.id IN :userIds")
     Set<TaskAssignment> findAllByTaskIdAndUserIds(@Param("taskId") Long taskId, @Param("userIds") Set<Long> userIds);
     List<TaskAssignment> findAllByTaskId(Long taskId);

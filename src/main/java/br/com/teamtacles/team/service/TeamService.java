@@ -26,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -249,6 +252,48 @@ public class TeamService {
 
         team.removeMember(membershipToDelete);
         teamRepository.save(team);
+    }
+
+    @Transactional
+    public void handleOwnerDeletion(User user) {
+        List<Team> teams = teamRepository.findAllByOwner(user);
+
+        for(Team team : teams) {
+            List<TeamMember> members = team.getMembers().stream()
+                    .filter(m -> !m.getUser().equals(user))
+                    .toList();
+
+            if(members.isEmpty()) {
+                teamRepository.delete(team);
+            } else {
+                transferProjectOwnership(members, team);
+            }
+        }
+    }
+
+    @Transactional
+    public void transferProjectOwnership(List<TeamMember> members, Team team) {
+        Optional<TeamMember> newOwnerMember = members.stream()
+                .filter(m -> m.getTeamRole().equals(ETeamRole.ADMIN))
+                .min(Comparator.comparing(TeamMember::getJoinedAt));
+
+        if(newOwnerMember.isEmpty()) {
+            newOwnerMember = members.stream()
+                    .min(Comparator.comparing(TeamMember::getJoinedAt));
+        }
+
+        newOwnerMember.ifPresent(member -> {
+            User newOwner = member.getUser();
+            team.transferOwnership(newOwner);
+            member.changeRole(ETeamRole.OWNER);
+            teamMemberRepository.save(member);
+            teamRepository.save(team);
+        });
+    }
+
+    @Transactional
+    public void removeAllMembershipsForUser(User user) {
+        teamMemberRepository.deleteAllByUser(user);
     }
 
     public Team findTeamEntityById(Long teamId) {

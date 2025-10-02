@@ -9,11 +9,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
     boolean existsByNameIgnoreCaseAndOwner(String name, User owner);
     Optional<Team> findByInvitationToken(String token);
+    List<Team> findAllByOwner(User owner);
 
     @Query("SELECT DISTINCT t FROM Team t " +
             "JOIN FETCH t.members m " +

@@ -2,6 +2,7 @@ package br.com.teamtacles.user.controller;
 
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.exception.ErrorResponse;
+import br.com.teamtacles.orchestration.service.UserLifecycleService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
@@ -28,9 +29,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final UserLifecycleService userLifecycleService;
 
-    public UserController(UserService userService){
+    public UserController(UserService userService, UserLifecycleService userLifecycleService){
         this.userService = userService;
+        this.userLifecycleService = userLifecycleService;
     }
 
     @Operation(summary = "Register a new user", description = "Creates a new user account in the system and sends a verification email.")
@@ -103,7 +106,7 @@ public class UserController {
     })
     @DeleteMapping
     ResponseEntity<Void> updateUser(@AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        userService.deleteUser(authenticatedUser.getUser());
+        userLifecycleService.handleUserDeletion(authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
 }
