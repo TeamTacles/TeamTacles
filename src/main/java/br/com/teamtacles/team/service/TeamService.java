@@ -260,7 +260,7 @@ public class TeamService {
 
         for(Team team : teams) {
             List<TeamMember> members = team.getMembers().stream()
-                    .filter(m -> !m.getUser().equals(user))
+                    .filter(m -> !m.getUser().equals(user) && m.isAcceptedInvite())
                     .toList();
 
             if(members.isEmpty()) {

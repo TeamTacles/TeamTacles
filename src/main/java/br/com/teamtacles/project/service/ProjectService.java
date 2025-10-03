@@ -334,7 +334,7 @@ public class ProjectService {
 
         for(Project project : projects) {
             List<ProjectMember> members = project.getMembers().stream()
-                    .filter(m -> !m.getUser().equals(user))
+                    .filter(m -> !m.getUser().equals(user) && m.isAcceptedInvite())
                     .toList();
 
             if(members.isEmpty()) {
@@ -403,8 +403,6 @@ public class ProjectService {
         long totalCount = tasks.size();
         return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
     }
-
-
 
     public Set<Task> findFilteredTasksForProject(Long projectId, TaskFilterReportDTO filter) {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);

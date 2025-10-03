@@ -50,8 +50,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth ->  auth.requestMatchers("api/auth/**").permitAll()
                         .requestMatchers("api/user/register").permitAll()
                         .requestMatchers("/api/user/verify-account").permitAll()
-                        .requestMatchers("/api/team/accept-invite").permitAll()
-                        .requestMatchers("/api/project/accept-invite").permitAll()
+                        .requestMatchers("/api/team/accept-invite-email").permitAll()
+                        .requestMatchers("/api/project/accept-invite-email").permitAll()
 
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll().anyRequest().authenticated())
                 .oauth2ResourceServer(
