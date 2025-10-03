@@ -3,6 +3,7 @@ package br.com.teamtacles.project.controller;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
+import br.com.teamtacles.orchestration.service.UserAccountService;
 import br.com.teamtacles.project.dto.response.PdfExportResult;
 import br.com.teamtacles.project.dto.response.ProjectReportDTO;
 import br.com.teamtacles.project.dto.request.*;
@@ -38,10 +39,12 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectPdfExportService projectPdfExportService;
+    private final UserAccountService userAccountService;
 
-    public ProjectController(ProjectService projectService, ProjectPdfExportService projectPdfExportService) {
+    public ProjectController(ProjectService projectService, ProjectPdfExportService projectPdfExportService, UserAccountService userAccountService) {
         this.projectService = projectService;
         this.projectPdfExportService = projectPdfExportService;
+        this.userAccountService = userAccountService;
     }
 
 
@@ -337,6 +340,24 @@ public class ProjectController {
             @PathVariable Long userId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
         projectService.deleteMembershipFromProject(projectId, userId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Leave a project", description = "Allows an authenticated user to leave a project they are a member of.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Successfully left the project"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, the user is the owner and cannot leave the project",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "project or membership not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{projectId}/leave")
+    public ResponseEntity<Void> leaveProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        userAccountService.leaveProjectAndTasks(projectId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
 }

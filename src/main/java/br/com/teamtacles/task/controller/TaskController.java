@@ -209,4 +209,22 @@ public class TaskController {
         taskService.removeUsersFromTask(projectId, taskId, deleteRequest.getUserIds(), authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Leave a task", description = "Allows an authenticated user to leave a task they are a member of.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Successfully left the task"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, the user is the owner and cannot leave the task",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Task or membership not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{taskId}/leave")
+    public ResponseEntity<Void> leaveTask(
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        taskService.leaveTask(taskId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
+    }
 }

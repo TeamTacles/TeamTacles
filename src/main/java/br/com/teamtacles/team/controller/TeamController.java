@@ -258,4 +258,22 @@ public class TeamController {
         teamService.deleteMembershipFromTeam(teamId, userId, authenticatedUser.getUser());
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Leave a team", description = "Allows an authenticated user to leave a team they are a member of.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Successfully left the team"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, the user is the owner and cannot leave the team",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Team or membership not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{teamId}/leave")
+    public ResponseEntity<Void> leaveTeam(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        teamService.leaveTeam(teamId, authenticatedUser.getUser());
+        return ResponseEntity.noContent().build();
+    }
 }

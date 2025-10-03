@@ -20,6 +20,7 @@ import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.task.repository.TaskRepository;
 import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.team.model.Team;
@@ -321,6 +322,7 @@ public class ProjectService {
         if (!actingUser.getId().equals(userIdToDelete)) {
             projectAuthorizationService.checkProjectAdmin(actingUser, project);
         }
+
         ProjectMember membershipToDelete = findMembershipByIdOrThrow(userToDelete, project);
         ProjectMember actingMembership = findMembershipByIdOrThrow(actingUser, project);
         projectMembershipActionValidator.validateDeletion(actingMembership, membershipToDelete);
@@ -329,18 +331,42 @@ public class ProjectService {
     }
 
     @Transactional
-    public void handleOwnerDeletion(User user) {
-        List<Project> projects = projectRepository.findAllByOwner(user);
+    public void leaveProject(Long projectId, User actingUser) {
+        Project project = findProjectByIdOrThrow(projectId);
+        projectAuthorizationService.checkProjectMembership(actingUser, project);
 
-        for(Project project : projects) {
+        boolean isOwner = project.getOwner().equals(actingUser);
+
+        if(isOwner) {
             List<ProjectMember> members = project.getMembers().stream()
-                    .filter(m -> !m.getUser().equals(user) && m.isAcceptedInvite())
+                    .filter(m -> !m.getUser().equals(actingUser) && m.isAcceptedInvite())
                     .toList();
 
             if(members.isEmpty()) {
                 projectRepository.delete(project);
             } else {
                 transferProjectOwnership(members, project);
+                removeAssignmentForUser(project, actingUser);
+            }
+        } else {
+            removeAssignmentForUser(project, actingUser);
+        }
+    }
+
+    @Transactional
+    public void handleOwnerDeletion(User actingUser) {
+        List<Project> projects = projectRepository.findAllByOwner(actingUser);
+
+        for(Project project : projects) {
+            List<ProjectMember> members = project.getMembers().stream()
+                    .filter(m -> !m.getUser().equals(actingUser) && m.isAcceptedInvite())
+                    .toList();
+
+            if(members.isEmpty()) {
+                projectRepository.delete(project);
+            } else {
+                transferProjectOwnership(members, project);
+                removeAssignmentForUser(project, actingUser);
             }
         }
     }
@@ -363,6 +389,16 @@ public class ProjectService {
             projectMemberRepository.save(member);
             projectRepository.save(project);
         });
+    }
+
+    private void removeAssignmentForUser(Project project, User actingUser) {
+        ProjectMember member = project.getMembers().stream()
+                .filter(m -> m.getUser().equals(actingUser))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this project."));
+
+        project.removeMember(member);
+        projectRepository.save(project);
     }
 
     public Set<User> findProjectMembersFromIdList(Long projectId, List<Long> userIds) {

@@ -255,18 +255,42 @@ public class TeamService {
     }
 
     @Transactional
-    public void handleOwnerDeletion(User user) {
-        List<Team> teams = teamRepository.findAllByOwner(user);
+    public void leaveTeam(Long teamId, User actingUser) {
+        Team team = findTeamByIdOrThrow(teamId);
+        teamAuthorizationService.checkTeamMembership(actingUser, team);
 
-        for(Team team : teams) {
+        boolean isOwner = team.getOwner().equals(actingUser);
+
+        if(isOwner) {
             List<TeamMember> members = team.getMembers().stream()
-                    .filter(m -> !m.getUser().equals(user) && m.isAcceptedInvite())
+                    .filter(m -> !m.getUser().equals(actingUser) && m.isAcceptedInvite())
                     .toList();
 
             if(members.isEmpty()) {
                 teamRepository.delete(team);
             } else {
                 transferProjectOwnership(members, team);
+                removeAssignmentForUser(team, actingUser);
+            }
+        } else {
+            removeAssignmentForUser(team, actingUser);
+        }
+    }
+
+    @Transactional
+    public void handleOwnerDeletion(User actingUser) {
+        List<Team> teams = teamRepository.findAllByOwner(actingUser);
+
+        for(Team team : teams) {
+            List<TeamMember> members = team.getMembers().stream()
+                    .filter(m -> !m.getUser().equals(actingUser) && m.isAcceptedInvite())
+                    .toList();
+
+            if(members.isEmpty()) {
+                teamRepository.delete(team);
+            } else {
+                transferProjectOwnership(members, team);
+                removeAssignmentForUser(team, actingUser);
             }
         }
     }
@@ -289,6 +313,16 @@ public class TeamService {
             teamMemberRepository.save(member);
             teamRepository.save(team);
         });
+    }
+
+    private void removeAssignmentForUser(Team team, User actingUser) {
+        TeamMember member = team.getMembers().stream()
+                .filter(m -> m.getUser().equals(actingUser))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this team."));
+
+        team.removeMember(member);
+        teamRepository.save(team);
     }
 
     public Team findTeamEntityById(Long teamId) {

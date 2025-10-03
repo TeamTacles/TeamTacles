@@ -22,6 +22,8 @@ import br.com.teamtacles.task.repository.TaskRepository;
 import br.com.teamtacles.task.validator.TaskAssignmentRoleValidator;
 import br.com.teamtacles.task.validator.TaskProjectAssociationValidator;
 import br.com.teamtacles.task.validator.TaskStateTransitionValidator;
+import br.com.teamtacles.team.model.Team;
+import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.repository.TeamMemberRepository;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.service.UserService;
@@ -204,6 +206,61 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
+
+    @Transactional
+    public void leaveTask(Long taskId, User actingUser) {
+        Task task = findTaskByIdOrThrow(taskId);
+        taskAuthorizationService.checkChangeStatusPermission(actingUser, task);
+
+        boolean isOwner = task.getOwner().equals(actingUser);
+
+        if(isOwner) {
+            List<TaskAssignment> members = task.getAssignments().stream()
+                    .filter(m -> !m.getUser().equals(actingUser))
+                    .toList();
+
+            if(members.isEmpty()) {
+                taskRepository.delete(task);
+            } else {
+                transferTaskOwnership(members, task);
+                removeAssignmentForUser(task, actingUser);
+            }
+        } else {
+            removeAssignmentForUser(task, actingUser);
+        }
+    }
+
+    // Sobrecarga temporária - Refatorar depois
+    private void leaveTask(Task task, User actingUser) {
+        boolean isOwner = task.getOwner().equals(actingUser);
+
+        if(isOwner) {
+            List<TaskAssignment> members = task.getAssignments().stream()
+                    .filter(m -> !m.getUser().equals(actingUser))
+                    .toList();
+
+            if(members.isEmpty()) {
+                taskRepository.delete(task);
+            } else {
+                transferTaskOwnership(members, task);
+                removeAssignmentForUser(task, actingUser);
+            }
+        } else {
+            removeAssignmentForUser(task, actingUser);
+        }
+    }
+
+    @Transactional
+    public void leaveAllTasks(User actingUser) {
+
+        List<TaskAssignment> assignments = taskAssignmentRepository.findAllByUser(actingUser);
+
+        for(TaskAssignment assignment : assignments) {
+           Task task = assignment.getTask();
+           leaveTask(task, actingUser);
+        }
+    }
+
     @Transactional
     public void handleOwnerDeletion(User user) {
         List<Task> tasks = taskRepository.findAllByOwner(user);
@@ -216,13 +273,14 @@ public class TaskService {
             if(members.isEmpty()) {
                 taskRepository.delete(task);
             } else {
-                transferProjectOwnership(members, task);
+                transferTaskOwnership(members, task);
+                removeAssignmentForUser(task, user);
             }
         }
     }
 
     @Transactional
-    public void transferProjectOwnership(List<TaskAssignment> members, Task task) {
+    public void transferTaskOwnership(List<TaskAssignment> members, Task task) {
         Optional<TaskAssignment> newOwnerMember = members.stream()
                 .min(Comparator.comparing(TaskAssignment::getAssignedAt));
 
@@ -233,6 +291,16 @@ public class TaskService {
             taskAssignmentRepository.save(member);
             taskRepository.save(task);
         });
+    }
+
+    private void removeAssignmentForUser(Task task, User user) {
+        TaskAssignment member = task.getAssignments().stream()
+                .filter(m -> m.getUser().equals(user))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("User to update not found in this task."));
+
+        task.removeAssigment(member);
+        taskRepository.save(task);
     }
 
     @BusinessActivityLog(action = "Update Task Details")
