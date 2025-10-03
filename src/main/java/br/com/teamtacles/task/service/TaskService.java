@@ -257,11 +257,6 @@ public class TaskService {
 
     }
 
-    @Transactional
-    public void removeAllMembershipsForUser(User user) {
-        taskAssignmentRepository.deleteAllByUser(user);
-    }
-
     private TaskAssignment findByTaskAndUserOrThrow(Task task, User userToRemove) {
         return taskAssignmentRepository.findByTaskAndUser(task, userToRemove)
                 .orElseThrow((() -> new ResourceNotFoundException("User to remove is not assigned to this task.")));

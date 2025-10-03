@@ -404,10 +404,7 @@ public class ProjectService {
         return new TaskSummaryDTO(totalCount, doneCount, inProgressCount, toDoCount, overdueCount);
     }
 
-    @Transactional
-    public void removeAllMembershipsForUser(User user) {
-        projectMemberRepository.deleteAllByUser(user);
-    }
+
 
     public Set<Task> findFilteredTasksForProject(Long projectId, TaskFilterReportDTO filter) {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);

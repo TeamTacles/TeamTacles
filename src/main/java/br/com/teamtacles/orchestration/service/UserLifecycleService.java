@@ -6,6 +6,7 @@ import br.com.teamtacles.task.service.TaskService;
 import br.com.teamtacles.team.service.TeamService;
 import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.service.UserService;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +31,6 @@ public class UserLifecycleService {
         taskService.handleOwnerDeletion(user);
         teamService.handleOwnerDeletion(user);
         projectService.handleOwnerDeletion(user);
-
-        taskService.removeAllMembershipsForUser(user);
-        teamService.removeAllMembershipsForUser(user);
-        projectService.removeAllMembershipsForUser(user);
 
         userService.deleteUser(user);
     }

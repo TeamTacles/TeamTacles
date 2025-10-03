@@ -16,7 +16,4 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     Page<TeamMember> findByTeamAndAcceptedInviteTrue(Team team, Pageable pageable);
     Page<TeamMember> findByUser(User user, Pageable pageable);
     Optional<TeamMember> findByInvitationToken(String token);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    void deleteAllByUser(User user);
 }

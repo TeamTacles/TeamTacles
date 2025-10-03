@@ -154,11 +154,7 @@ public class UserService {
     @BusinessActivityLog(action = "Delete User Account")
     @Transactional
     public void deleteUser(User user) {
-        User managedUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User with id " + user.getId() + " not found for deletion."));
-
-        managedUser.prepareForDeletion();
-        userRepository.delete(managedUser);
+        userRepository.deleteById(user.getId());
     }
 
     public User findUserEntityById(Long userId) {

@@ -291,11 +291,6 @@ public class TeamService {
         });
     }
 
-    @Transactional
-    public void removeAllMembershipsForUser(User user) {
-        teamMemberRepository.deleteAllByUser(user);
-    }
-
     public Team findTeamEntityById(Long teamId) {
         return findTeamByIdOrThrow(teamId);
     }
