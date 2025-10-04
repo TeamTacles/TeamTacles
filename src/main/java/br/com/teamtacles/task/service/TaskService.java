@@ -4,9 +4,7 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
-import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.*;
@@ -22,11 +20,7 @@ import br.com.teamtacles.task.repository.TaskRepository;
 import br.com.teamtacles.task.validator.TaskAssignmentRoleValidator;
 import br.com.teamtacles.task.validator.TaskProjectAssociationValidator;
 import br.com.teamtacles.task.validator.TaskStateTransitionValidator;
-import br.com.teamtacles.team.model.Team;
-import br.com.teamtacles.team.model.TeamMember;
-import br.com.teamtacles.team.repository.TeamMemberRepository;
 import br.com.teamtacles.user.model.User;
-import br.com.teamtacles.user.service.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
@@ -34,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
-import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -50,12 +43,10 @@ public class TaskService {
     private final TaskStateTransitionValidator taskStateTransitionValidator;
     private final TaskAssignmentRoleValidator taskAssignmentRoleValidator;
     private final ProjectService projectService;
-    private final UserService userService;
     private final ProjectAuthorizationService projectAuthorizationService;
     private final TaskAuthorizationService taskAuthorizationService;
     private final ModelMapper modelMapper;
     private final PagedResponseMapper pagedResponseMapper;
-    private final TeamMemberRepository teamMemberRepository;
 
     public TaskService(TaskRepository taskRepository,
                        TaskAssignmentRepository taskAssignmentRepository,
@@ -63,23 +54,20 @@ public class TaskService {
                        TaskStateTransitionValidator taskStateTransitionValidator,
                        TaskAssignmentRoleValidator taskAssignmentRoleValidator,
                        ProjectService projectService,
-                       UserService userService,
                        ProjectAuthorizationService projectAuthorizationService,
                        TaskAuthorizationService taskAuthorizationService,
                        ModelMapper modelMapper,
-                       PagedResponseMapper pagedResponseMapper, TeamMemberRepository teamMemberRepository) {
+                       PagedResponseMapper pagedResponseMapper) {
         this.taskRepository = taskRepository;
         this.taskAssignmentRepository = taskAssignmentRepository;
         this.taskProjectAssociationValidator = taskProjectAssociationValidator;
         this.taskStateTransitionValidator = taskStateTransitionValidator;
         this.taskAssignmentRoleValidator = taskAssignmentRoleValidator;
         this.projectService = projectService;
-        this.userService = userService;
         this.projectAuthorizationService = projectAuthorizationService;
         this.taskAuthorizationService = taskAuthorizationService;
         this.modelMapper = modelMapper;
         this.pagedResponseMapper = pagedResponseMapper;
-        this.teamMemberRepository = teamMemberRepository;
     }
 
     @BusinessActivityLog(action = "Create Task")
@@ -279,8 +267,7 @@ public class TaskService {
         }
     }
 
-    @Transactional
-    public void transferTaskOwnership(List<TaskAssignment> members, Task task) {
+    private void transferTaskOwnership(List<TaskAssignment> members, Task task) {
         Optional<TaskAssignment> newOwnerMember = members.stream()
                 .min(Comparator.comparing(TaskAssignment::getAssignedAt));
 
@@ -323,11 +310,6 @@ public class TaskService {
         Task updatedTask = taskRepository.save(task);
         return modelMapper.map(updatedTask, TaskResponseDTO.class);
 
-    }
-
-    private TaskAssignment findByTaskAndUserOrThrow(Task task, User userToRemove) {
-        return taskAssignmentRepository.findByTaskAndUser(task, userToRemove)
-                .orElseThrow((() -> new ResourceNotFoundException("User to remove is not assigned to this task.")));
     }
 
     public Task findTaskByIdOrThrow(Long taskId) {

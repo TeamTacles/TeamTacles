@@ -20,9 +20,7 @@ import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
-import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.task.repository.TaskRepository;
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.service.TeamAuthorizationService;
@@ -36,14 +34,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import br.com.teamtacles.project.dto.response.MemberPerformanceDTO;
-import br.com.teamtacles.project.dto.response.ProjectReportDTO;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
 
@@ -371,8 +366,7 @@ public class ProjectService {
         }
     }
 
-    @Transactional
-    public void transferProjectOwnership(List<ProjectMember> members, Project project) {
+    private void transferProjectOwnership(List<ProjectMember> members, Project project) {
         Optional<ProjectMember> newOwnerMember = members.stream()
                 .filter(m -> m.getProjectRole().equals(EProjectRole.ADMIN))
                 .min(Comparator.comparing(ProjectMember::getJoinedAt));
