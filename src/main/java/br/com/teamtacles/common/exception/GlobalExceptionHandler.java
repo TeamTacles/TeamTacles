@@ -52,7 +52,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UsernameAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
         log.error("Attempt to create an already existing username: {}", ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.CONFLICT, "Username already exists", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Username already exists",
+                ex.getMessage(),
+                "USERNAME_ALREADY_EXISTS"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -65,13 +71,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
         log.error("Attempt to create an already existing email: {}", ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.CONFLICT, "Email already exists", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Email already exists",
+                ex.getMessage(),
+                "EMAIL_ALREADY_EXISTS"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(PasswordMismatchException.class)
     public ResponseEntity<ErrorResponse> handlePasswordMismatchException(PasswordMismatchException ex) {
         log.error("Password Mismatch: {}", ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Password mismatch", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Password mismatch",
+                ex.getMessage(),
+                "PASSWORD_MISMATCH"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

@@ -29,6 +29,7 @@ import java.nio.file.AccessDeniedException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.Arrays;
+import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -73,6 +74,7 @@ public class SecurityConfiguration {
                                            CustomJwtAuthenticationConverter customJwtAuthenticationConverter) throws AuthenticationCredentialsNotFoundException, AccessDeniedException, Exception {
 
         http.csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth ->  auth.requestMatchers("api/auth/**").permitAll()
                         .requestMatchers("api/user/register").permitAll()
                         .requestMatchers("/api/user/verify-account").permitAll()
