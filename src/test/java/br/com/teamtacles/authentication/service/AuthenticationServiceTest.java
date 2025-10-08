@@ -1,5 +1,6 @@
 package br.com.teamtacles.authentication.service;
 
+import br.com.teamtacles.common.dto.response.AuthenticationResponseDTO;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.security.UserDetailService;
@@ -52,7 +53,7 @@ public class AuthenticationServiceTest {
     @DisplayName("1. Authentication and Token Flow")
     class AuthFlowTests {
         @Test
-        @DisplayName("1.1 - Should generate JWT when authentication is valid")
+        @DisplayName("1.1 - Should generate DTO with JWT when authentication is valid")
         void shouldGenerateJWT_WhenAuthenticationIsValid() {
             // Given
             UserAuthenticated userAuthenticated = new UserAuthenticated(testUser);
@@ -62,21 +63,23 @@ public class AuthenticationServiceTest {
             when(jwtService.generateToken(testUser)).thenReturn(expectedToken);
 
             // When
-            String generatedToken = authenticationService.generateToken(authentication);
+            // 2. A VARIÁVEL É DO TIPO CORRETO, RESOLVENDO "Cannot resolve symbol 'response'"
+            AuthenticationResponseDTO responseDTO = authenticationService.generateToken(authentication);
 
             // Then
-            assertThat(generatedToken).isEqualTo(expectedToken);
+            // 3. O USO CORRETO DA VARIÁVEL RESOLVE OS OUTROS ERROS
+            assertThat(responseDTO).isNotNull();
+            assertThat(responseDTO.getToken()).isEqualTo(expectedToken);
         }
 
+        // ... O resto dos seus testes não precisa de alteração ...
         @Test
         @DisplayName("1.2 - Should throw UsernameNotFoundException when user email does not exist (UserDetailService)")
         void shouldThrowException_WhenEmailDoesNotExist() {
-            // Given
             String nonExistentEmail = "nonexistent@email.com";
             UserDetailService realUserDetailService = new UserDetailService(userRepository);
             when(userRepository.findByEmailIgnoreCase(nonExistentEmail)).thenReturn(Optional.empty());
 
-            // When & Then
             assertThatThrownBy(() -> realUserDetailService.loadUserByUsername(nonExistentEmail))
                     .isInstanceOf(UsernameNotFoundException.class)
                     .hasMessage("User not found with email " + nonExistentEmail);
@@ -85,16 +88,13 @@ public class AuthenticationServiceTest {
         @Test
         @DisplayName("1.3 - Should identify an unverified (disabled) user (UserDetailService)")
         void shouldIdentifyDisabledAccount_WhenUserIsUnverified() {
-            // Given
             User unverifiedUser = TestDataFactory.createUnverifiedUser();
             String email = unverifiedUser.getEmail();
             UserDetailService realUserDetailService = new UserDetailService(userRepository);
             when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(unverifiedUser));
 
-            // When
             UserDetails userDetails = realUserDetailService.loadUserByUsername(email);
 
-            // Then
             assertThat(userDetails.isEnabled()).isFalse();
         }
     }
@@ -105,19 +105,14 @@ public class AuthenticationServiceTest {
         @Test
         @DisplayName("2.1 - Should process forgot password and send email when user exists")
         void shouldProcessForgotPassword_WhenUserExists() {
-            // Arrange
             String email = testUser.getEmail();
             when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(testUser));
-
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
-            // Act
             authenticationService.processForgotPasswordRequest(email);
 
-            // Assert
             verify(userRepository, times(1)).save(userCaptor.capture());
             verify(emailService, times(1)).sendPasswordResetEmail(eq(email), anyString());
-
             User savedUser = userCaptor.getValue();
             assertThat(savedUser.getResetPasswordToken()).isNotNull();
             assertThat(savedUser.getResetPasswordTokenExpiry()).isNotNull();
@@ -126,14 +121,11 @@ public class AuthenticationServiceTest {
         @Test
         @DisplayName("2.2 - Should not send email when user does not exist")
         void shouldNotSendEmail_WhenUserDoesNotExist() {
-            // Given
             String nonExistentEmail = "nonexistent@email.com";
             when(userRepository.findByEmailIgnoreCase(nonExistentEmail)).thenReturn(Optional.empty());
 
-            // When
             authenticationService.processForgotPasswordRequest(nonExistentEmail);
 
-            // Then
             verify(userRepository, never()).save(any(User.class));
             verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
         }

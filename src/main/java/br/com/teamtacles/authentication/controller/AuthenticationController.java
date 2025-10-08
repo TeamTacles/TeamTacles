@@ -2,6 +2,7 @@ package br.com.teamtacles.authentication.controller;
 
 import br.com.teamtacles.authentication.service.AuthenticationService;
 import br.com.teamtacles.authentication.dto.request.AuthenticationDTO;
+import br.com.teamtacles.common.dto.response.AuthenticationResponseDTO;
 import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.exception.ErrorResponse;
 import org.springframework.http.MediaType;
@@ -52,11 +53,13 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
+    // --- 3. MÉTODO ATUALIZADO ---
     @PostMapping("/authenticate")
-    public String authenticate(@RequestBody AuthenticationDTO request) {
+    public ResponseEntity<AuthenticationResponseDTO> authenticate(@RequestBody AuthenticationDTO request) {
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
         Authentication authentication = authenticationManager.authenticate(authToken);
-        return authenticationService.generateToken(authentication);
+        AuthenticationResponseDTO responseDTO = authenticationService.generateToken(authentication);
+        return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Forgot Password", description = "Initiates the password reset process by sending an email with a reset token to the user.")

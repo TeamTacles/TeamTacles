@@ -1,5 +1,6 @@
 package br.com.teamtacles.authentication.service;
 
+import br.com.teamtacles.common.dto.response.AuthenticationResponseDTO;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.user.model.User;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +26,11 @@ public class AuthenticationService {
         this.emailService = emailService;
     }
 
-    public String generateToken(Authentication authentication) {
+    public AuthenticationResponseDTO generateToken(Authentication authentication) { // <-- 2. MUDE O TIPO DE RETORNO
         UserAuthenticated userAuthenticated = (UserAuthenticated) authentication.getPrincipal();
         User user = userAuthenticated.getUser();
-        return jwtService.generateToken(user);
+        String token = jwtService.generateToken(user);
+        return new AuthenticationResponseDTO(token);
     }
 
     @Transactional
