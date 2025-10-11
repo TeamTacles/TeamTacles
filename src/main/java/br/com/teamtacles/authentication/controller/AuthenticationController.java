@@ -70,6 +70,7 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "404", description = "User with the specified email not found",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
+
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void forgotPassword(@RequestBody @Valid ForgotPasswordRequestDTO request) {

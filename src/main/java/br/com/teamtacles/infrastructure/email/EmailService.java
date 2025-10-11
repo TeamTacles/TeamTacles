@@ -30,12 +30,15 @@ public class EmailService {
     private TemplateEngine templateEngine;
 
     @Async
-    public void sendPasswordResetEmail(String to, String token) {
+    public void sendPasswordResetEmail(String to, String resetUrl) {
+        // DIAGNÓSTICO DEFINITIVO: O que está nesta linha?
+        log.info("[DIAGNOSTIC-TEST] Valor de 'resetUrl' recebido pelo EmailService: {}", resetUrl);
+
         log.info("[EMAIL-ACTION] Attempting to send 'password-reset-email' to '{}'", to);
 
         try {
             Context context = new Context();
-            context.setVariable("resetUrl", baseUrl + "/reset-password?token=" + token);
+            context.setVariable("resetUrl", resetUrl);
 
             String htmlContent = templateEngine.process("password-reset-email", context);
 

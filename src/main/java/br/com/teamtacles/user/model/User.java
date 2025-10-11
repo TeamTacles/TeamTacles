@@ -104,6 +104,19 @@ public class User {
         this.verificationTokenExpiry = expiryDate;
     }
 
+
+    public void clearPasswordResetToken() {
+        this.resetPasswordToken = null;
+        this.resetPasswordTokenExpiry = null;
+    }
+
+
+    public void clearVerificationToken() {
+        this.verificationToken = null;
+        this.verificationTokenExpiry = null;
+    }
+
+
     public void assignPasswordResetToken(String token, LocalDateTime expiryDate) {
         this.resetPasswordToken = token;
         this.resetPasswordTokenExpiry = expiryDate;

@@ -43,7 +43,6 @@ public class SecurityConfiguration {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        // ... (seu bean de CORS permanece o mesmo, está correto)
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081", "http://localhost:5173", "http://localhost:3000", "http://192.168.15.14:8081", "http://192.168.15.14:5173", "http://192.168.15.14:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -65,7 +64,6 @@ public class SecurityConfiguration {
 
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                // --- CORREÇÃO APLICADA AQUI ---
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/register").permitAll()
@@ -73,6 +71,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/team/accept-invite-email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/accept-invite-email").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/forgot-password-web/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(
@@ -81,7 +80,6 @@ public class SecurityConfiguration {
         return http.build();
     }
 
-    // --- SEUS OUTROS BEANS (permanecem iguais, estão corretos) ---
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
