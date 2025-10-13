@@ -424,15 +424,13 @@ public class UserServiceTest {
         void shouldDeleteUserSuccessfully_WhenRequestedByAuthenticatedUser() {
             // Given
             User userToDelete = TestDataFactory.createValidUser();
-
+            
             // When
             userService.deleteUser(userToDelete);
 
             // Then
-            verify(userRepository, times(1)).delete(userToDelete);
+            verify(userRepository, times(1)).deleteById(userToDelete.getId());
         }
-
-
 
         }
 }
