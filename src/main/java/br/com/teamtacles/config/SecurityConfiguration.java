@@ -72,6 +72,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/project/accept-invite-email").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/forgot-password-web/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(
