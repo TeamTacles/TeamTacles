@@ -65,7 +65,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
         String genericErrorMessage = "Invalid email or password. Please try again.";
         log.error("Authentication failed due to bad credentials.", ex);
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Authentication Failed", genericErrorMessage);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Authentication Failed",
+                genericErrorMessage,
+                "INVALID_CREDENTIALS"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
@@ -152,7 +159,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException ex) {
         String friendlyErrorMessage = "Your account is not verified. Please check your email for the verification link.";
         log.error("Login attempt with disabled account: {}", ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Account Not Verified", friendlyErrorMessage);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Account Not Verified",
+                friendlyErrorMessage,
+                "ACCOUNT_NOT_VERIFIED"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String errorTitle, String errorMessage) {
