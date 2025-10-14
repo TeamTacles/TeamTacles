@@ -113,8 +113,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SameAsCurrentPasswordException.class)
     public ResponseEntity<ErrorResponse> handleSameAsCurrentPasswordException(SameAsCurrentPasswordException ex) {
         String genericErrorMessage = "The new password cannot be the same as your current password.";
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid Password",
+                genericErrorMessage,
+                "SAME_AS_CURRENT_PASSWORD"
+        );
         log.error("Attempt to set the same password as current.", ex);
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Password", genericErrorMessage);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
