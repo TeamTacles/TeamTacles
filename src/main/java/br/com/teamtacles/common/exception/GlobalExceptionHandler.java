@@ -102,7 +102,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.error("Resource Not Found: {}", ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "Resource not found",
+                ex.getMessage(),
+                "RESOURCE_NOT_FOUND"
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
