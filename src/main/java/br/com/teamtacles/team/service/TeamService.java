@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TeamService {
@@ -143,7 +144,11 @@ public class TeamService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("Data inconsistency: Team found without corresponding member."));
 
-            return toUserTeamResponseDTO(team, membership);
+            List<String> memberNames = team.getMembers().stream()
+                    .map(member -> member.getUser().getUsername())
+                    .collect(Collectors.toList());
+
+            return toUserTeamResponseDTO(team, membership, memberNames);
         });
 
         return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
@@ -355,12 +360,14 @@ public class TeamService {
         return dto;
     }
 
-    private UserTeamResponseDTO toUserTeamResponseDTO(Team team, TeamMember membership) {
+    private UserTeamResponseDTO toUserTeamResponseDTO(Team team, TeamMember membership, List<String> memberNames) {
         UserTeamResponseDTO dto = new UserTeamResponseDTO();
         dto.setId(team.getId());
         dto.setName(team.getName());
         dto.setDescription(team.getDescription());
         dto.setTeamRole(membership.getTeamRole());
+        dto.setMemberCount(memberNames.size());
+        dto.setMemberNames(memberNames);
         return dto;
     }
 }

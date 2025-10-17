@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,4 +25,10 @@ public class UserTeamResponseDTO {
 
     @Schema(description = "The role of the current user within this team.", example = "OWNER")
     private ETeamRole teamRole;
+
+    @Schema(description = "The total number of members in the team.", example = "5")
+    private long memberCount;
+
+    @Schema(description = "A list of usernames of the team members.")
+    private List<String> memberNames;
 }
