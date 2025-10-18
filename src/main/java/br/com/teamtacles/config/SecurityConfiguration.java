@@ -67,9 +67,9 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/user/verify-account").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/team/accept-invite-email").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/project/accept-invite-email").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/verify-account").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/accept-project-invitation-email").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/accept-team-invitation-email").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/forgot-password-web/**").permitAll()
                         .requestMatchers("/images/**").permitAll()

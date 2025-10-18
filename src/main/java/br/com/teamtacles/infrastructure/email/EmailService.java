@@ -66,7 +66,7 @@ public class EmailService {
         try {
             Context context = new Context();
             context.setVariable("teamName", teamName);
-            context.setVariable("invitationUrl", baseUrl + "/api/team/accept-invite-email?token=" + token);
+            context.setVariable("invitationUrl", baseUrl + "/accept-team-invitation-email?token=" + token);
 
             String htmlContent = templateEngine.process("team-invitation-email", context);
 
@@ -94,7 +94,7 @@ public class EmailService {
         try {
             Context context = new Context();
             context.setVariable("projectName", projectName);
-            context.setVariable("invitationUrl", baseUrl + "/api/project/accept-invite-email?token=" + token);
+            context.setVariable("invitationUrl", baseUrl + "/accept-project-invitation-email?token=" + token);
 
             String htmlContent = templateEngine.process("project-invitation-email", context);
 
@@ -120,7 +120,7 @@ public class EmailService {
         log.info("[EMAIL-ACTION] Attempting to send 'verification-email' to '{}'", to);
         try {
             Context context = new Context();
-            context.setVariable("verificationUrl", baseUrl + "/api/user/verify-account?token=" + token);
+            context.setVariable("verificationUrl", baseUrl + "/verify-account?token=" + token);
 
             String htmlContent = templateEngine.process("verification-email", context);
 

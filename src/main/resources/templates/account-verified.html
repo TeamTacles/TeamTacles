@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" th:href="@{/images/icon.png}">
+    <title>Verificação de Conta - TeamTacles</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #3C3C3C; /* Cor de fundo baseada nos seus templates */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            box-sizing: border-box;
+            color: #ffffff;
+        }
+
+        .container {
+            background: #3C3C3C; /* Cor de card baseada nos seus templates */
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            max-width: 450px;
+            width: 100%;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .octopus-image {
+            width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        p {
+            color: #cccccc;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .app-name {
+            font-weight: bold;
+            color: #EB5F1C; /* Cor laranja da marca */
+        }
+
+        /* --- Estilos para o Bloco de Erro --- */
+        .error-message {
+            text-align: center;
+            color: #ffcdd2; /* Cor de texto de erro suave */
+        }
+        .error-message h1 { /* Título do erro */
+            color: #ef5350; /* Cor vermelha para o erro */
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .error-message p { /* Mensagem de erro */
+            color: #e0e0e0;
+            font-size: 15px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div th:if="${error}" class="error-message">
+        <h1>Link Inválido ou Expirado</h1>
+        <p th:text="${error}">Mensagem de erro aqui.</p>
+        <p style="margin-top: 20px;">Por favor, tente solicitar um novo email de verificação no aplicativo.</p>
+    </div>
+
+    <div th:unless="${error}">
+        <img th:src="@{/images/polvo_conta_verificada.png}" alt="Polvo TeamTacles - Conta Verificada" class="octopus-image"/>
+        <h1>Conta verificada!</h1>
+        <p>
+            Você já pode fechar essa aba e ir para o aplicativo <span class="app-name">TeamTacles</span>.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

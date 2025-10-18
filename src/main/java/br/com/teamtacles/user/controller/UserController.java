@@ -70,19 +70,6 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userResponseDTO);
     }
 
-    @Operation(summary = "Verify user account", description = "Activates a user's account using a verification token sent via email.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Account verified successfully",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = MessageResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Token not found, invalid, or expired",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @GetMapping("/verify-account")
-    public ResponseEntity<MessageResponseDTO> verifyAccount(@RequestParam("token") String token) {
-        userService.verifyUser(token);
-        return ResponseEntity.ok(new MessageResponseDTO("Your account has been successfully verified."));
-    }
-
     @Operation(summary = "Get current user profile", description = "Retrieves the profile information of the currently authenticated user.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {

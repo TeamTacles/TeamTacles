@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" th:href="@{/images/icon.png}">
+    <title>Convite Aceito - TeamTacles</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #3C3C3C;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            box-sizing: border-box;
+            color: #ffffff;
+        }
+
+        .container {
+            background: #3C3C3C;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            max-width: 450px;
+            width: 100%;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .octopus-image {
+            width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        p {
+            color: #cccccc;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .app-name {
+            font-weight: bold;
+            color: #EB5F1C; /* Cor laranja da marca */
+        }
+
+        /* --- Estilos para o Bloco de Erro --- */
+        .error-message {
+            text-align: center;
+            color: #ffcdd2;
+        }
+        .error-message h1 {
+            color: #ef5350; /* Vermelho */
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .error-message p {
+            color: #e0e0e0;
+            font-size: 15px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div th:if="${error}" class="error-message">
+        <h1>Erro ao aceitar convite</h1>
+        <p th:text="${error}">Mensagem de erro aqui.</p>
+        <p style="margin-top: 20px;">Por favor, verifique se o convite ainda é válido ou peça um novo convite.</p>
+    </div>
+
+    <div th:unless="${error}">
+        <img th:src="@{/images/polvo_aceite_convite.png}" alt="Polvo TeamTacles - Convite Aceito" class="octopus-image"/>
+        <h1>Convite aceito!</h1>
+        <p>
+            Você foi adicionado com sucesso. Já pode fechar essa aba e ir para o aplicativo <span class="app-name">TeamTacles</span>.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

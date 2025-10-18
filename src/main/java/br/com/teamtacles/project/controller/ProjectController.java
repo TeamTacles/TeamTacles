@@ -201,18 +201,6 @@ public class ProjectController {
         PagedResponse<UserProjectResponseDTO> projects = projectService.getAllProjectsByUser(pageable, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(projects);
     }
-    @Operation(summary = "Accept email invitation", description = "Accepts a project invitation from an email link. This endpoint is designed to be opened in a browser.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Invitation accepted successfully",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = MessageResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Invitation token is invalid or expired",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @GetMapping("/accept-invite-email")
-    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
-        projectService.acceptInvitationFromEmail(token);
-        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
-    }
 
     @Operation(summary = "List members of a project", description = "Retrieves a paginated list of all members in a specific project.")
     @ApiResponses(value = {

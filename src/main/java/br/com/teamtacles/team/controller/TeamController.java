@@ -115,19 +115,6 @@ public class TeamController {
         return ResponseEntity.ok(teamMemberDTO);
     }
 
-    @Operation(summary = "Accept a team invitation from email", description = "Confirms an email-based invitation. This endpoint is typically called when a user clicks the link in their email.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Invitation accepted successfully",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = MessageResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Invitation token is invalid or expired",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @GetMapping("/accept-invite-email")
-    public ResponseEntity<MessageResponseDTO> acceptInvitation(@RequestParam String token) {
-        teamService.acceptInvitationFromEmail(token);
-        return ResponseEntity.ok(new MessageResponseDTO("Invitation accepted successfully."));
-    }
-
     @Operation(summary = "Get all teams for the current user", description = "Retrieves a paginated and filtered list of teams the authenticated user is a member of.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved teams"),
