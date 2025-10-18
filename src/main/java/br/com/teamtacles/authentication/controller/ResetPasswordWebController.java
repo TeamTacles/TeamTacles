@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Controller
@@ -35,7 +36,7 @@ public class ResetPasswordWebController {
     public String showResetPasswordForm(@RequestParam String token, Model model) { // ← RENOMEADO
         Optional<User> userOpt = userRepository.findByResetPasswordToken(token);
 
-        if (userOpt.isEmpty() || userOpt.get().getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+        if (userOpt.isEmpty() || userOpt.get().getResetPasswordTokenExpiry().isBefore(OffsetDateTime.now())) {
             model.addAttribute("error", "Este link de redefinição é inválido ou já expirou. Por favor, solicite um novo.");
             model.addAttribute("expired", true);
             return "reset-password-form";

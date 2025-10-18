@@ -238,14 +238,24 @@ public class ProjectService {
 
         projectInvitationValidator.validateRole(requestDTO.getRole());
 
-
         projectMembershipValidator.validateNewMember(userToInvite, project);
 
-        ProjectMember newMember = new ProjectMember(userToInvite, project, requestDTO.getRole());
-        String token = newMember.generateInvitation();
+        Optional<ProjectMember> existingMembership = projectMemberRepository.findByUserAndProject(userToInvite, project);
 
-        project.addMember(newMember);
-        projectRepository.save(project);
+        ProjectMember memberToInvite;
+        String token;
+
+        if (existingMembership.isPresent()) {
+            memberToInvite = existingMembership.get();
+            memberToInvite.changeRole(requestDTO.getRole());
+            token = memberToInvite.generateInvitation();
+            projectMemberRepository.save(memberToInvite);
+        } else {
+            memberToInvite = new ProjectMember(userToInvite, project, requestDTO.getRole());
+            token = memberToInvite.generateInvitation();
+            project.addMember(memberToInvite);
+            projectRepository.save(project);
+        }
 
         emailService.sendProjectInvitationEmail(userToInvite.getEmail(), project.getTitle(), token);
     }

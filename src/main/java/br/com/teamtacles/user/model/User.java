@@ -43,13 +43,13 @@ public class User {
     private String resetPasswordToken;
 
     @Column(name = "reset_password_token_expiry")
-    private LocalDateTime resetPasswordTokenExpiry;
+    private OffsetDateTime resetPasswordTokenExpiry;
 
     @Column(name = "verification_token")
     private String verificationToken;
 
     @Column(name = "verification_token_expiry")
-    private LocalDateTime verificationTokenExpiry;
+    private OffsetDateTime verificationTokenExpiry;
 
     @Column(nullable = false)
     private boolean enabled = false;
@@ -99,25 +99,22 @@ public class User {
         this.enabled = false;
     }
 
-    public void assignVerificationToken(String token, LocalDateTime expiryDate) {
+    public void assignVerificationToken(String token, OffsetDateTime expiryDate) {
         this.verificationToken = token;
         this.verificationTokenExpiry = expiryDate;
     }
-
 
     public void clearPasswordResetToken() {
         this.resetPasswordToken = null;
         this.resetPasswordTokenExpiry = null;
     }
 
-
     public void clearVerificationToken() {
         this.verificationToken = null;
         this.verificationTokenExpiry = null;
     }
 
-
-    public void assignPasswordResetToken(String token, LocalDateTime expiryDate) {
+    public void assignPasswordResetToken(String token, OffsetDateTime expiryDate) {
         this.resetPasswordToken = token;
         this.resetPasswordTokenExpiry = expiryDate;
     }

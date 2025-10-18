@@ -15,7 +15,7 @@ import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.team.repository.TeamMemberRepository;
 import br.com.teamtacles.team.repository.TeamRepository;
-import br.com.teamtacles.team.validator.MembershipValidator;
+import br.com.teamtacles.team.validator.TeamMembershipValidator;
 import br.com.teamtacles.team.validator.TeamMembershipActionValidator;
 import br.com.teamtacles.team.validator.TeamNameUniquenessValidator;
 import br.com.teamtacles.user.model.User;
@@ -56,7 +56,7 @@ public class TeamServiceTest {
     @Mock
     private TeamNameUniquenessValidator teamNameUniquenessValidator;
     @Mock
-    private MembershipValidator membershipValidator;
+    private TeamMembershipValidator teamMembershipValidator;
     @Mock
     private TeamMembershipActionValidator teamMembershipActionValidator;
 
@@ -159,7 +159,7 @@ public class TeamServiceTest {
 
             // Assert
             verify(teamAuthorizationService).checkTeamAdmin(owner, team);
-            verify(membershipValidator).validateNewMember(userToInvite, team);
+            verify(teamMembershipValidator).validateNewMember(userToInvite, team);
             verify(teamRepository).save(any(Team.class));
             verify(emailService).sendTeamInvitationEmail(eq(userToInvite.getEmail()), eq(team.getName()), anyString());
         }
@@ -199,7 +199,7 @@ public class TeamServiceTest {
             when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
             when(userService.findUserEntityByEmail(alreadyMember.getEmail())).thenReturn(alreadyMember);
             doThrow(new ResourceAlreadyExistsException("User is already a member."))
-                    .when(membershipValidator).validateNewMember(alreadyMember, team);
+                    .when(teamMembershipValidator).validateNewMember(alreadyMember, team);
 
             // Act & Assert
             assertThatThrownBy(() -> teamService.inviteMemberByEmail(team.getId(), inviteDTO, owner))
@@ -298,7 +298,7 @@ public class TeamServiceTest {
 
             when(teamRepository.findByInvitationToken(validToken)).thenReturn(Optional.of(teamWithInvite));
             doNothing().when(teamTokenValidator).validateInvitationLinkToken(teamWithInvite);
-            doNothing().when(membershipValidator).validateNewMember(newUser, teamWithInvite);
+            doNothing().when(teamMembershipValidator).validateNewMember(newUser, teamWithInvite);
             ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
             when(teamRepository.save(teamCaptor.capture())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -332,7 +332,7 @@ public class TeamServiceTest {
                     () -> teamService.acceptInvitationFromLink(invalidToken, anyUser)
             );
             verify(teamTokenValidator, never()).validateInvitationLinkToken(any(Team.class));
-            verify(membershipValidator, never()).validateNewMember(any(User.class), any(Team.class));
+            verify(teamMembershipValidator, never()).validateNewMember(any(User.class), any(Team.class));
             verify(teamRepository, never()).save(any(Team.class));
         }
 
@@ -348,7 +348,7 @@ public class TeamServiceTest {
             when(teamRepository.findByInvitationToken(validToken)).thenReturn(Optional.of(teamWithInvite));
             doNothing().when(teamTokenValidator).validateInvitationLinkToken(teamWithInvite);
             doThrow(new ResourceAlreadyExistsException("User is already a member of this team."))
-                    .when(membershipValidator).validateNewMember(alreadyMember, teamWithInvite);
+                    .when(teamMembershipValidator).validateNewMember(alreadyMember, teamWithInvite);
             // Act & Assert
             assertThrows(
                     ResourceAlreadyExistsException.class,

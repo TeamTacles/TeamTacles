@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS teams (
     owner_id BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     invitation_token VARCHAR(255) UNIQUE,
-    invitation_token_expiry TIMESTAMP,
+    invitation_token_expiry TIMESTAMP WITH TIME ZONE,
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS team_members (
     accepted_invite BOOLEAN NOT NULL DEFAULT FALSE,
     team_role VARCHAR(30) NOT NULL,
     invitation_token VARCHAR(255),
-    invitation_token_expiry TIMESTAMP,
+    invitation_token_expiry TIMESTAMP WITH TIME ZONE,
     UNIQUE (user_id, team_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS project (
     owner_id BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE,
     invitation_token VARCHAR(255) UNIQUE,
-    invitation_token_expiry TIMESTAMP,
+    invitation_token_expiry TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_project_owner FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS project_members (
     accepted_invite BOOLEAN NOT NULL DEFAULT false,
     project_role VARCHAR(50) NOT NULL,
     invitation_token VARCHAR(255) UNIQUE,
-    invitation_token_expiry TIMESTAMP,
+    invitation_token_expiry TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
     CONSTRAINT fk_pm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT uq_project_user UNIQUE (project_id, user_id)

@@ -44,7 +44,7 @@ public class TeamMember {
     private String invitationToken;
 
     @Column(name = "invitation_token_expiry")
-    private LocalDateTime invitationTokenExpiry;
+    private OffsetDateTime invitationTokenExpiry;
 
     @PrePersist
     public void OnInvite() {
@@ -63,7 +63,7 @@ public class TeamMember {
         String token = UUID.randomUUID().toString();
 
         this.invitationToken = token;
-        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+        this.invitationTokenExpiry = OffsetDateTime.now().plusHours(24);
 
         return token;
     }

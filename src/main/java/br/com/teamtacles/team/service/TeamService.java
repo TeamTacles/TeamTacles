@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,7 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamAuthorizationService teamAuthorizationService;
     private final TeamNameUniquenessValidator teamNameUniquenessValidator;
-    private final MembershipValidator membershipValidator;
+    private final TeamMembershipValidator teamMembershipValidator;
     private final TeamTokenValidator teamTokenValidator;
     private final TeamMembershipActionValidator teamMembershipActionValidator;
     private final TeamInvitationValidator teamInvitationValidator;
@@ -56,7 +57,7 @@ public class TeamService {
                        TeamAuthorizationService teamAuthorizationService,
                        PagedResponseMapper pagedResponseMapper, EmailService emailService,
                        TeamNameUniquenessValidator teamNameUniquenessValidator,
-                       MembershipValidator membershipValidator,
+                       TeamMembershipValidator teamMembershipValidator,
                        TeamTokenValidator teamTokenValidator,
                        TeamMembershipActionValidator teamMembershipActionValidator,
                        TeamInvitationValidator teamInvitationValidator) {
@@ -68,7 +69,7 @@ public class TeamService {
         this.pagedResponseMapper = pagedResponseMapper;
         this.emailService = emailService;
         this.teamNameUniquenessValidator = teamNameUniquenessValidator;
-        this.membershipValidator = membershipValidator;
+        this.teamMembershipValidator = teamMembershipValidator;
         this.teamTokenValidator = teamTokenValidator;
         this.teamMembershipActionValidator = teamMembershipActionValidator;
         this.teamInvitationValidator = teamInvitationValidator;
@@ -173,13 +174,24 @@ public class TeamService {
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
         User userToInvite = userService.findUserEntityByEmail(dto.getEmail());
 
-        membershipValidator.validateNewMember(userToInvite, team);
+        teamMembershipValidator.validateNewMember(userToInvite, team);
 
-        TeamMember newMember = new TeamMember(userToInvite, team, dto.getRole());
-        String token = newMember.generateInvitation();
+        Optional<TeamMember> existingMembership = teamMemberRepository.findByUserAndTeam(userToInvite, team);
 
-        team.addMember(newMember);
-        teamRepository.save(team);
+        TeamMember memberToInvite;
+        String token;
+
+        if (existingMembership.isPresent()) {
+            memberToInvite = existingMembership.get();
+            memberToInvite.changeRole(dto.getRole());
+            token = memberToInvite.generateInvitation();
+            teamMemberRepository.save(memberToInvite);
+        } else {
+            memberToInvite = new TeamMember(userToInvite, team, dto.getRole());
+            token = memberToInvite.generateInvitation();
+            team.addMember(memberToInvite);
+            teamRepository.save(team);
+        }
 
         emailService.sendTeamInvitationEmail(userToInvite.getEmail(), team.getName(), token);
     }
@@ -222,7 +234,7 @@ public class TeamService {
         Team team = findByInvitationTokenLinkOrThrow(token);
 
         teamTokenValidator.validateInvitationLinkToken(team);
-        membershipValidator.validateNewMember(actingUser, team);
+        teamMembershipValidator.validateNewMember(actingUser, team);
 
         TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
         newMember.acceptedInvitation();

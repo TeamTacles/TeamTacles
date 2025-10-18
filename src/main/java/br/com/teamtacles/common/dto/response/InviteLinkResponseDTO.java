@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class InviteLinkResponseDTO {
     private String inviteLink;
-    private LocalDateTime expiresAt;
+    private OffsetDateTime expiresAt;
 }

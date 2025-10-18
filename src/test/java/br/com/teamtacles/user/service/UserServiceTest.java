@@ -26,6 +26,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -379,7 +380,7 @@ public class UserServiceTest {
         void shouldResetPasswordSuccessfully_WhenTokenIsValid() {
             // Given
             User user = TestDataFactory.createValidUser();
-            user.assignPasswordResetToken("valid-token", LocalDateTime.now().plusHours(1));
+            user.assignPasswordResetToken("valid-token", OffsetDateTime.now().plusHours(1));
             String newPassword = "newSecurePassword123";
 
             when(userRepository.findByResetPasswordToken("valid-token")).thenReturn(Optional.of(user));

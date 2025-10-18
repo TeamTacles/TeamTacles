@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -76,7 +77,7 @@ public class UserService {
         user.addRole(userRole);
 
         String token = UUID.randomUUID().toString();
-        user.assignVerificationToken(token, LocalDateTime.now().plusHours(1));
+        user.assignVerificationToken(token, OffsetDateTime.now().plusHours(1));
 
         User savedUser = userRepository.save(user);
         emailService.sendVerificationEmail(savedUser.getEmail(), token);
@@ -139,7 +140,7 @@ public class UserService {
             if (!user.isEnabled()) {
 
                 String token = UUID.randomUUID().toString();
-                user.assignVerificationToken(token, LocalDateTime.now().plusHours(24));
+                user.assignVerificationToken(token, OffsetDateTime.now().plusHours(24));
 
                 userRepository.save(user);
                 emailService.sendVerificationEmail(user.getEmail(), token);

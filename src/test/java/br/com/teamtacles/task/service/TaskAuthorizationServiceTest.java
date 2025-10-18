@@ -26,6 +26,7 @@ class TaskAuthorizationServiceTest {
 
     @Mock
     private ProjectAuthorizationService projectAuthorizationService;
+
     @Mock
     private ProjectMemberRepository projectMemberRepository;
 

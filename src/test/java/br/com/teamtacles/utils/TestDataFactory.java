@@ -63,7 +63,7 @@ public class TestDataFactory {
     public static User createUnverifiedUser() {
         User user = createValidUser();
         user.disableAccount();
-        user.assignVerificationToken("valid-token-123", LocalDateTime.now().plusHours(1));
+        user.assignVerificationToken("valid-token-123", OffsetDateTime.now().plusHours(1));
         return user;
     }
 
@@ -134,7 +134,7 @@ public class TestDataFactory {
         try {
             Field expiryField = TeamMember.class.getDeclaredField("invitationTokenExpiry");
             expiryField.setAccessible(true);
-            ReflectionUtils.setField(expiryField, member, LocalDateTime.now().minusDays(1));
+            ReflectionUtils.setField(expiryField, member, OffsetDateTime.now().minusDays(1));
         } catch (NoSuchFieldException e) {
             throw new RuntimeException("Failed to set expiry date on TeamMember mock", e);
         }

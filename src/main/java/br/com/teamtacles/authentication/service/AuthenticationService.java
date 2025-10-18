@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,7 +65,7 @@ public class AuthenticationService {
             user.clearPasswordResetToken();
 
             String token = UUID.randomUUID().toString();
-            user.assignPasswordResetToken(token, LocalDateTime.now().plusHours(1));
+            user.assignPasswordResetToken(token, OffsetDateTime.now().plusHours(1));
             userRepository.save(user);
 
             String resetUrl = webResetPasswordUrl + "?token=" + token;
@@ -80,7 +81,7 @@ public class AuthenticationService {
         User user = userRepository.findByResetPasswordToken(token)
                 .orElseThrow(() -> new RuntimeException("Token inválido ou já utilizado."));
 
-        if (user.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+        if (user.getResetPasswordTokenExpiry().isBefore(OffsetDateTime.now())) {
             log.warn("[SECURITY] Attempt to use expired reset token. User ID: {}", user.getId());
             throw new RuntimeException("O link de redefinição de senha expirou.");
         }

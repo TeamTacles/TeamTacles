@@ -45,7 +45,7 @@ public class Project {
     private String invitationToken;
 
     @Column(name = "invitation_token_expiry")
-    private LocalDateTime invitationTokenExpiry;
+    private OffsetDateTime invitationTokenExpiry;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> members = new HashSet<>();
@@ -79,7 +79,7 @@ public class Project {
         String token = UUID.randomUUID().toString();
 
         this.invitationToken = token;
-        this.invitationTokenExpiry = LocalDateTime.now().plusHours(24);
+        this.invitationTokenExpiry = OffsetDateTime.now().plusHours(24);
 
         return token;
     }
