@@ -169,6 +169,7 @@ public class ProjectService {
 
             if(!teamMemberAlreadyInProject) {
                 ProjectMember newProjectMembership = new ProjectMember(teamMember.getUser(), project, EProjectRole.MEMBER);
+                newProjectMembership.acceptedInvitation();
                 project.addMember(newProjectMembership);
             }
         }
@@ -191,7 +192,15 @@ public class ProjectService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("Data inconsistency: Project " + project.getId() + " found without the corresponding member."));
 
-            return toUserProjectResponseDTO(project, membership);
+            long taskCount = taskRepository.countByProject(project);
+
+            Pageable topMembersPageable = Pageable.ofSize(10);
+            Page<ProjectMember> membersPage = projectMemberRepository.findByProjectAndAcceptedInviteTrue(project, topMembersPageable);
+            List<String> memberNames = membersPage.getContent().stream()
+                    .map(member -> member.getUser().getUsername())
+                    .collect(Collectors.toList());
+
+            return toUserProjectResponseDTO(project, membership, memberNames, taskCount);
         });
 
         return pagedResponseMapper.toPagedResponse(userProjectDTOPage, UserProjectResponseDTO.class);
@@ -504,21 +513,20 @@ public class ProjectService {
         return dto;
     }
 
-    private UserProjectResponseDTO toUserProjectResponseDTO(Project project, ProjectMember membership) {
+    private UserProjectResponseDTO toUserProjectResponseDTO(Project project, ProjectMember membership, List<String> membersName, Long taskCount) {
         UserProjectResponseDTO dto = new UserProjectResponseDTO();
         dto.setId(project.getId());
         dto.setTitle(project.getTitle());
         dto.setDescription(project.getDescription());
         dto.setProjectRole(membership.getProjectRole());
+        dto.setTaskCount(taskCount);
+        dto.setMemberNames(membersName);
         return dto;
     }
-
 
     private Project findProjectWithMembersAndTasksOrThrow(Long projectId) {
         return projectRepository.findByIdWithMembersAndTasks(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
     }
-
-
 }
 

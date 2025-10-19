@@ -2,11 +2,14 @@ package br.com.teamtacles.task.controller;
 
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
+import br.com.teamtacles.project.dto.request.ProjectFilterDTO;
+import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.security.UserAuthenticated;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
+import br.com.teamtacles.task.dto.response.UserTaskResponseDTO;
 import br.com.teamtacles.task.service.TaskService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -4,13 +4,17 @@ import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
+import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
+import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.model.Project;
+import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.*;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
+import br.com.teamtacles.task.dto.response.UserTaskResponseDTO;
 import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
@@ -129,6 +133,14 @@ public class TaskService {
         return assignments.stream()
                 .map(this::toUserAssignmentResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<UserTaskResponseDTO> getAllTasksByUser(Pageable pageable, TaskFilterReportDTO filter, User actingUser) {
+        Page<Task> tasksPage = taskRepository.findTasksByUserWithFilters(actingUser.getId(), filter, pageable);
+
+        Page<UserTaskResponseDTO> userTaskDTOPage = tasksPage.map(this::toUserTaskResponseDTO);
+
+        return pagedResponseMapper.toPagedResponse(userTaskDTOPage, UserTaskResponseDTO.class);
     }
 
     @BusinessActivityLog(action = "Assign Users to Task")
@@ -324,5 +336,21 @@ public class TaskService {
         dto.setUsername(assignment.getUser().getUsername());
         dto.setTaskRole(assignment.getTaskRole());
         return dto;
+    }
+
+    private UserTaskResponseDTO toUserTaskResponseDTO(Task task) {
+        UserTaskResponseDTO taskDto = new UserTaskResponseDTO();
+        ProjectResponseDTO projectDto = new ProjectResponseDTO();
+
+        projectDto.setId(task.getProject().getId());
+        projectDto.setTitle(task.getProject().getTitle());
+
+        taskDto.setId(task.getId());
+        taskDto.setTitle(task.getTitle());
+        taskDto.setDescription(task.getDescription());
+        taskDto.setTaskStatus(task.getStatus());
+        taskDto.setDueDate(task.getDueDate());
+        taskDto.setProject(projectDto);
+        return taskDto;
     }
 }

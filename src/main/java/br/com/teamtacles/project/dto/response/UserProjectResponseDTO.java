@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,4 +26,10 @@ public class UserProjectResponseDTO {
 
     @Schema(description = "The user's role in this specific project.", example = "ADMIN")
     private EProjectRole projectRole;
+
+    @Schema(description = "The total number of task in the project.", example = "5")
+    private long taskCount;
+
+    @Schema(description = "A list of usernames of the project members.")
+    private List<String> memberNames;
 }

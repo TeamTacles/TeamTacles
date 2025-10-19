@@ -21,6 +21,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     Page<ProjectMember> findByUserAndAcceptedInviteTrue(User user, Pageable pageable);
     Page<ProjectMember> findByProjectAndAcceptedInviteTrue(Project project, Pageable pageable);
     Optional<ProjectMember> findByInvitationToken(String token);
+    long countByProjectAndAcceptedInviteTrue(Project project);
 
     @Query("SELECT pm.user FROM ProjectMember pm WHERE pm.project.id = :projectId AND pm.user.id IN :userIds AND pm.acceptedInvite = true")
     Set<User> findProjectMembersAsUsers(@Param("projectId") Long projectId, @Param("userIds") List<Long> userIds);

@@ -17,8 +17,21 @@ import br.com.teamtacles.task.enumeration.ETaskStatus;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByProject(Pageable pageable, Project project);
-
+    long countByProject(Project project);
     List<Task> findAllByOwner(User owner);
+
+    @Query("SELECT DISTINCT t FROM Task t JOIN t.assignments a " +
+            "LEFT JOIN FETCH t.project p " +
+            "WHERE a.user.id = :userId " +
+            "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
+            "AND ( :#{#filter.status} IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( :#{#filter.dueDateAfter} IS NULL OR CAST(t.dueDate AS date) >= :#{#filter.dueDateAfter} ) " +
+            "AND ( :#{#filter.dueDateBefore} IS NULL OR CAST(t.dueDate AS date) <= :#{#filter.dueDateBefore} ) " +
+            "AND ( :#{#filter.conclusionDateAfter} IS NULL OR CAST(t.completedAt AS date) >= :#{#filter.conclusionDateAfter} ) " +
+            "AND ( :#{#filter.conclusionDateBefore} IS NULL OR CAST(t.completedAt AS date) <= :#{#filter.conclusionDateBefore} ) " +
+            "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
+            "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
+    Page<Task> findTasksByUserWithFilters(@Param("userId") Long userId, @Param("filter") TaskFilterReportDTO filter, Pageable pageable);
 
     @Query("SELECT t FROM Task t WHERE t.project.id = :projectId " +
             "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +

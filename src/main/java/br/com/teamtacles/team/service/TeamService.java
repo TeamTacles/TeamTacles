@@ -145,11 +145,15 @@ public class TeamService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("Data inconsistency: Team found without corresponding member."));
 
-            List<String> memberNames = team.getMembers().stream()
+            long memberCount = teamMemberRepository.countByTeamAndAcceptedInviteTrue(team);
+
+            Pageable topMembersPageable = Pageable.ofSize(10);
+            Page<TeamMember> membersPage = teamMemberRepository.findByTeamAndAcceptedInviteTrue(team, topMembersPageable);
+            List<String> memberNames = membersPage.getContent().stream()
                     .map(member -> member.getUser().getUsername())
                     .collect(Collectors.toList());
 
-            return toUserTeamResponseDTO(team, membership, memberNames);
+            return toUserTeamResponseDTO(team, membership, memberNames, memberCount);
         });
 
         return pagedResponseMapper.toPagedResponse(userTeamResponseDTOPage, UserTeamResponseDTO.class);
@@ -372,13 +376,13 @@ public class TeamService {
         return dto;
     }
 
-    private UserTeamResponseDTO toUserTeamResponseDTO(Team team, TeamMember membership, List<String> memberNames) {
+    private UserTeamResponseDTO toUserTeamResponseDTO(Team team, TeamMember membership, List<String> memberNames, Long memberCount) {
         UserTeamResponseDTO dto = new UserTeamResponseDTO();
         dto.setId(team.getId());
         dto.setName(team.getName());
         dto.setDescription(team.getDescription());
         dto.setTeamRole(membership.getTeamRole());
-        dto.setMemberCount(memberNames.size());
+        dto.setMemberCount(memberCount);
         dto.setMemberNames(memberNames);
         return dto;
     }
