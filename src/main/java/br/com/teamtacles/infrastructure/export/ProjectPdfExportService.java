@@ -3,6 +3,7 @@ package br.com.teamtacles.infrastructure.export;
 import br.com.teamtacles.common.exception.PdfGenerationException;
 import br.com.teamtacles.common.util.ReportFileNameGenerator;
 import br.com.teamtacles.project.dto.response.PdfExportResult;
+import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.service.ProjectService;
@@ -21,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectPdfExportService {
@@ -37,16 +41,25 @@ public class ProjectPdfExportService {
     public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterReportDTO taskFilter) {
         Project project = projectService.getProjectByIdForReport(projectId, taskFilter.getAssignedUserId(), actingUser);
         Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
+
+        List<Task> tasksSorted = tasks.stream()
+                .sorted(Comparator.comparingInt(task -> task.getStatus().getValue()))
+                .toList();
+
+        List<ProjectMember> membersSorted = project.getMembers().stream()
+                .sorted(Comparator.comparingInt(member -> member.getProjectRole().getValue()))
+                .toList();
+
         TaskSummaryDTO summary = projectService.calculateTaskSummary(tasks);
 
-        byte[] pdfContent = export(project, summary, tasks, taskFilter);
+        byte[] pdfContent = export(project, summary, membersSorted, tasksSorted, taskFilter);
 
         String filename = ReportFileNameGenerator.gerenateForProject(project);
 
         return new PdfExportResult(pdfContent, filename);
     }
 
-    public byte[] export(Project project, TaskSummaryDTO summary, Set<Task> tasks, TaskFilterReportDTO taskFilter) {
+    public byte[] export(Project project, TaskSummaryDTO summary, List<ProjectMember> membersSorted, List<Task> tasksSorted, TaskFilterReportDTO taskFilter) {
         try {
 
             String logoDataUri = loadLogoAsBase64("static/images/logo.png");
@@ -54,7 +67,8 @@ public class ProjectPdfExportService {
             Context context = new Context();
             context.setVariable("project", project);
             context.setVariable("summary", summary);
-            context.setVariable("tasks", tasks);
+            context.setVariable("membersSorted", membersSorted);
+            context.setVariable("tasks", tasksSorted);
             context.setVariable("taskFilter", taskFilter);
             context.setVariable("logoUrl", logoDataUri);
             context.setVariable("generationDate", LocalDateTime.now());

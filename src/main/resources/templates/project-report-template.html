@@ -6,7 +6,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap');
 
-        /* Estilos Globais */
         body, html {
             font-family: 'Roboto', Arial, sans-serif;
             font-size: 11px;
@@ -15,6 +14,7 @@
             padding: 0;
             background-color: #ffffff;
         }
+
         .page-container {
             width: 100%;
             max-width: 800px;
@@ -23,7 +23,6 @@
             box-sizing: border-box;
         }
 
-        /* --- Cabeçalho --- */
         .header-table {
             width: 100%;
             border-bottom: 1px solid #e0e0e0;
@@ -50,7 +49,6 @@
             padding-top: 5px;
         }
 
-        /* --- Seções e Títulos --- */
         .section-title {
             font-size: 20px;
             font-weight: 700;
@@ -63,7 +61,6 @@
             margin-bottom: 20px;
         }
 
-        /* --- Linha Divisória --- */
         hr {
             border: 0;
             height: 1px;
@@ -71,7 +68,6 @@
             margin: 30px 0;
         }
 
-        /* --- Resumo Geral --- */
         .summary-table {
             width: 100%;
             border-collapse: collapse;
@@ -97,7 +93,6 @@
         .summary-todo { color: #f1c40f; }
         .summary-overdue { color: #e74c3c; }
 
-        /* --- Tabelas de Dados --- */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -122,11 +117,10 @@
             border-bottom: none;
         }
 
-        /* --- ESTILOS DA TASK --- */
         .task-card {
             margin-bottom: 20px;
             padding: 15px;
-            border: 1px solid; /* A cor será definida pela classe de status */
+            border: 1px solid;
             border-radius: 8px;
             break-inside: avoid;
             page-break-inside: avoid;
@@ -157,14 +151,12 @@
             margin: 20px 20px;
         }
 
-        /* Cores da Borda por Status da Task */
         .border-done { border-color: #2ecc71; }
         .border-in-progress { border-color: #3498db; }
         .border-todo { border-color: #f1c40f; }
         .border-overdue { border-color: #e74c3c; }
         .border-default { border-color: #ecf0f1; }
 
-        /* --- Rodapé --- */
         .footer {
             text-align: center;
             font-size: 10px;
@@ -249,7 +241,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="member : ${project.members}">
+        <tr th:each="member : ${membersSorted}">
             <td th:text="${member.user.username}">username</td>
             <td th:text="${member.user.email}">email</td>
             <td>
@@ -271,7 +263,6 @@
             <div th:replace="~{:: taskCard(task=${task})}"></div>
         </div>
     </div>
-
 
     <div class="footer">
         Relatório gerado por TeamTacles em <span th:text="${#temporals.format(generationDate, 'dd/MM/yyyy HH:mm')}"></span>
