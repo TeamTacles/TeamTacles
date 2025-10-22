@@ -25,8 +25,8 @@ public class ModelMapperConfiguration {
 
         taskToDtoTypeMap.addMappings(mapper -> {
             mapper.map(src -> src.getOwner().getId(), TaskResponseDTO::setOwnerId);
-
             mapper.map(src -> src.getProject().getId(), TaskResponseDTO::setProjectId);
+            mapper.map(Task::getEffectiveStatus, TaskResponseDTO::setStatus);
         });
 
         modelMapper.createTypeMap(TaskAssignment.class, UserAssignmentResponseDTO.class)

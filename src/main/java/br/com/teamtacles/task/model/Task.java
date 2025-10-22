@@ -119,6 +119,18 @@ public class Task {
         return this.dueDate != null && OffsetDateTime.now().isAfter(this.dueDate) && !isCompleted();
     }
 
+    public ETaskStatus getEffectiveStatus() {
+        if(getStatus().equals(ETaskStatus.DONE)) {
+            return ETaskStatus.DONE;
+        }
+
+        if(isOverdue()) {
+            return ETaskStatus.OVERDUE;
+        }
+
+        return getStatus();
+    }
+
     public void transferOwnership(User newOwner) {
         this.owner = newOwner;
     }

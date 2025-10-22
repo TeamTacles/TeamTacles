@@ -23,6 +23,9 @@ public class TaskFilterReportDTO {
     @Schema(description = "Filter tasks by their current status.", example = "IN_PROGRESS")
     private ETaskStatus status;
 
+    @Schema(description = "Filter for tasks that are overdue.", example = "true")
+    private Boolean isOverdue;
+
     @Schema(description = "Filter tasks assigned to a specific user by their ID.", example = "101")
     private Long assignedUserId;
 

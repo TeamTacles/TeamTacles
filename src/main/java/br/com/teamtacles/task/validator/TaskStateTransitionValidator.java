@@ -9,6 +9,10 @@ public class TaskStateTransitionValidator {
 
     public void validate(ETaskStatus currentStatus, ETaskStatus newStatus) {
 
+        if (newStatus == ETaskStatus.OVERDUE) {
+            throw new InvalidTaskStateException("You cannot change the status of a task that is overdue.");
+        }
+
         if (currentStatus == newStatus) {
             throw new InvalidTaskStateException("The new status cannot be the same as the current status.");
         }

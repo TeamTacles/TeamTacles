@@ -25,6 +25,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "WHERE a.user.id = :userId " +
             "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
             "AND ( :#{#filter.status} IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( :#{#filter.isOverdue} IS NULL OR :#{#filter.isOverdue} = false " +
+            "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND ( :#{#filter.dueDateAfter} IS NULL OR CAST(t.dueDate AS date) >= :#{#filter.dueDateAfter} ) " +
             "AND ( :#{#filter.dueDateBefore} IS NULL OR CAST(t.dueDate AS date) <= :#{#filter.dueDateBefore} ) " +
             "AND ( :#{#filter.conclusionDateAfter} IS NULL OR CAST(t.completedAt AS date) >= :#{#filter.conclusionDateAfter} ) " +
@@ -36,6 +38,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.project.id = :projectId " +
             "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
             "AND ( :#{#filter.status} IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( :#{#filter.isOverdue} IS NULL OR :#{#filter.isOverdue} = false " +
+            "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND ( :#{#filter.dueDateAfter} IS NULL OR CAST(t.dueDate AS date) >= :#{#filter.dueDateAfter} ) " +
             "AND ( :#{#filter.dueDateBefore} IS NULL OR CAST(t.dueDate AS date) <= :#{#filter.dueDateBefore} ) " +
             "AND ( :#{#filter.conclusionDateAfter} IS NULL OR CAST(t.completedAt AS date) >= :#{#filter.conclusionDateAfter} ) " +
@@ -49,6 +53,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "LEFT JOIN FETCH a.user u " +
             "WHERE t.project.id = :projectId " +
             "AND (:#{#filter.status} IS NULL OR t.status = :#{#filter.status}) " +
+            "AND ( :#{#filter.isOverdue} IS NULL OR :#{#filter.isOverdue} = false " +
+            "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND (:#{#filter.assignedUserId} IS NULL OR a.user.id = :#{#filter.assignedUserId}) " +
             "AND (:#{#filter.updatedAtAfter} IS NULL OR CAST(t.updatedAt AS date) >= :#{#filter.updatedAtAfter}) " +
             "AND (:#{#filter.updatedAtBefore} IS NULL OR CAST(t.updatedAt AS date) <= :#{#filter.updatedAtBefore})")
