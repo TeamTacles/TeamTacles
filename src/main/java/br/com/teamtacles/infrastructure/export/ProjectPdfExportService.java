@@ -62,7 +62,7 @@ public class ProjectPdfExportService {
     public byte[] export(Project project, TaskSummaryDTO summary, List<ProjectMember> membersSorted, List<Task> tasksSorted, TaskFilterReportDTO taskFilter) {
         try {
 
-            String logoDataUri = loadLogoAsBase64("static/images/logo.png");
+            String logoDataUri = loadLogoAsBase64("static/images/icon.png");
 
             Context context = new Context();
             context.setVariable("project", project);
