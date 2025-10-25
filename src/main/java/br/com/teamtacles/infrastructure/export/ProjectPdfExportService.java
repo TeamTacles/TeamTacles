@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -43,7 +44,7 @@ public class ProjectPdfExportService {
         Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
 
         List<Task> tasksSorted = tasks.stream()
-                .sorted(Comparator.comparingInt(task -> task.getStatus().getValue()))
+                .sorted(Comparator.comparingInt((Task task) -> task.getStatus().getValue()).reversed())
                 .toList();
 
         List<ProjectMember> membersSorted = project.getMembers().stream()
@@ -71,7 +72,7 @@ public class ProjectPdfExportService {
             context.setVariable("tasks", tasksSorted);
             context.setVariable("taskFilter", taskFilter);
             context.setVariable("logoUrl", logoDataUri);
-            context.setVariable("generationDate", LocalDateTime.now());
+            context.setVariable("generationDate", OffsetDateTime.now());
 
             String html = templateEngine.process("project-report-template", context);
 

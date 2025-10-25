@@ -178,7 +178,7 @@
             <td>
                 <div class="project-title" th:text="${project.title}">Nome do Projeto</div>
                 <div class="meta-info">
-                    <strong>Criado em:</strong> <span th:text="${#temporals.format(project.createdAt, 'dd/MM/yyyy')}">Data</span> |
+                    <strong>Criado em:</strong> <span th:text="${#temporals.format(project.createdAt, 'dd/MM/yyyy HH:mm:ss')}">Data</span> |
                     <strong>Dono:</strong> <span th:text="${project.owner.username}">Dono</span>
                 </div>
                 <div th:if="${taskFilter != null}" class="meta-info">
@@ -269,7 +269,7 @@
     </div>
 </div>
 
-<div th:fragment="taskCard(task)" th:with="statusStr=${(task != null and task.status != null) ? task.status.name() : 'DEFAULT'}">
+<div th:fragment="taskCard(task)" th:with="statusStr=${(task != null and task.status != null) ? task.getEffectiveStatus().name() : 'DEFAULT'}">
     <div th:switch="${statusStr}">
         <div th:case="'DONE'" class="task-card border-done">
             <div th:replace="~{:: taskContent(task=${task}, statusStr=${statusStr})}"></div>
@@ -312,8 +312,8 @@
                         <span th:case="*">N/A</span>
                     </span>
                 </p>
-                <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy') : 'N/A'}">Data</span></p>
-                <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy') : '-----'}">Data</span></p>
+                <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy HH:mm:ss') : '-----'}">Data</span></p>
+                <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy HH:mm:ss') : '-----'}">Data</span></p>
             </div>
         </div>
     </div>
