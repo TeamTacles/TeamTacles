@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
+import br.com.teamtacles.team.repository.TeamMemberRepository;
 
 @Service
 public class ProjectService {
@@ -65,6 +66,7 @@ public class ProjectService {
     private final ModelMapper modelMapper;
     private final PagedResponseMapper pagedResponseMapper;
     private final TaskRepository taskRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     public ProjectService(
             ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
@@ -76,8 +78,9 @@ public class ProjectService {
             ProjectMembershipValidator projectMembershipValidator,
             ProjectTokenValidator projectTokenValidator,
             ProjectMembershipActionValidator projectMembershipActionValidator,
-            ProjectInvitationValidator projectInvitationValidator
-            ) {
+            ProjectInvitationValidator projectInvitationValidator,
+            TeamMemberRepository teamMemberRepository
+    ) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.modelMapper = modelMapper;
@@ -93,6 +96,7 @@ public class ProjectService {
         this.projectMembershipActionValidator = projectMembershipActionValidator;
         this.projectInvitationValidator = projectInvitationValidator;
         this.taskRepository = taskRepository;
+        this.teamMemberRepository = teamMemberRepository;
     }
 
     @BusinessActivityLog(action = "Create Project")
@@ -161,15 +165,21 @@ public class ProjectService {
         Team teamToImport = teamService.findTeamEntityById(teamId);
         teamAuthorizationService.checkTeamMembership(actingUser, teamToImport);
 
-        Set<TeamMember> teamMembers = teamToImport.getMembers();
+       
+        List<TeamMember> teamMembers = teamMemberRepository.findByTeamIdWithUser(teamToImport.getId());
 
         for (TeamMember teamMember : teamMembers) {
-            boolean teamMemberAlreadyInProject = project.getMembers().stream()
-                    .anyMatch(present -> present.getUser().equals(teamMember.getUser()));
+
+            
+            boolean teamMemberAlreadyInProject = projectMemberRepository.existsByUserAndProject(teamMember.getUser(), project);
 
             if(!teamMemberAlreadyInProject) {
                 ProjectMember newProjectMembership = new ProjectMember(teamMember.getUser(), project, EProjectRole.MEMBER);
-                newProjectMembership.acceptedInvitation();
+
+                if (teamMember.isAcceptedInvite()) {
+                    newProjectMembership.acceptedInvitation();
+                }
+
                 project.addMember(newProjectMembership);
             }
         }
@@ -295,7 +305,7 @@ public class ProjectService {
         projectRepository.save(project);
 
         return new InviteLinkResponseDTO(baseUrl + "/api/project/join?token=" + token,
-            project.getInvitationTokenExpiry());
+                project.getInvitationTokenExpiry());
     }
 
     @BusinessActivityLog(action = "Accept Project Invitation via Link")
@@ -529,4 +539,3 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
     }
 }
-
