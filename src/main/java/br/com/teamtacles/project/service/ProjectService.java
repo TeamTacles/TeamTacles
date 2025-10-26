@@ -6,10 +6,7 @@ import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.project.dto.request.*;
-import br.com.teamtacles.project.dto.response.ProjectMemberResponseDTO;
-import br.com.teamtacles.project.dto.response.ProjectReportDTO;
-import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
-import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
+import br.com.teamtacles.project.dto.response.*;
 import br.com.teamtacles.project.enumeration.EProjectRole;
 import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.project.model.ProjectMember;
@@ -20,6 +17,7 @@ import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
+import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.task.repository.TaskRepository;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
@@ -36,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import br.com.teamtacles.project.dto.response.MemberPerformanceDTO;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -234,17 +231,17 @@ public class ProjectService {
     }
 
     @BusinessActivityLog(action = "Generate Project Report")
-    public ProjectReportDTO getProjectReport(Long projectId, User actingUser) {
+    public ProjectReportDTO getProjectReport(Long projectId, TaskFilterReportDTO filter, User actingUser) {
         projectAuthorizationService.checkProjectMembership(actingUser, findProjectByIdOrThrow(projectId));
 
-        Project projectWithTasks = findProjectWithMembersAndTasksOrThrow(projectId);
-        TaskSummaryDTO summary = calculateTaskSummary(projectWithTasks.getTasks());
+        Set<Task> tasks = taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
+        TaskSummaryDTO summary = calculateTaskSummary(tasks);
 
-        List<MemberPerformanceDTO> ranking = calculateMemberPerformanceRanking(projectId);
+        List<MemberTaskDistributionDTO> distribution = calculateMemberTaskDistribution(tasks);
 
         return ProjectReportDTO.builder()
                 .summary(summary)
-                .memberPerformanceRanking(ranking)
+                .memberTaskDistribution(distribution)
                 .build();
     }
 
@@ -440,7 +437,7 @@ public class ProjectService {
         OffsetDateTime now = OffsetDateTime.now();
 
         for (Task task : tasks) {
-            switch (task.getStatus()) {
+            switch (task.getEffectiveStatus()) {
                 case DONE:
                     doneCount++;
                     break;
@@ -450,12 +447,9 @@ public class ProjectService {
                 case TO_DO:
                     toDoCount++;
                     break;
-            }
-
-            if (task.getStatus() != ETaskStatus.DONE &&
-                    task.getDueDate() != null &&
-                    task.getDueDate().isBefore(now)) {
-                overdueCount++;
+                case OVERDUE:
+                    overdueCount++;
+                    break;
             }
         }
 
@@ -467,22 +461,26 @@ public class ProjectService {
         return taskRepository.findTasksByProjectWithFiltersForReport(projectId, filter);
     }
 
-    private List<MemberPerformanceDTO> calculateMemberPerformanceRanking(Long projectId) {
-        List<Task> completedTasks = taskRepository.findAllByProjectIdAndStatusWithAssignments(projectId, ETaskStatus.DONE);
-        return completedTasks.stream()
-                .flatMap(task -> task.getAssignments().stream())
-                .collect(Collectors.groupingBy(
-                        assignment -> assignment.getUser(),
-                        Collectors.counting()
-                ))
-                .entrySet().stream()
-                .map(entry -> new MemberPerformanceDTO(
-                        entry.getKey().getId(),
-                        entry.getKey().getUsername(),
-                        entry.getValue()
-                ))
-                .sorted(Comparator.comparingLong(MemberPerformanceDTO::getCompletedTasksCount).reversed())
-                .collect(Collectors.toList());
+    private List<MemberTaskDistributionDTO> calculateMemberTaskDistribution(Set<Task> tasks) {
+        Map<Long, MemberTaskDistributionDTO> distributionMap = new HashMap<>();
+
+        for (Task task : tasks) {
+            for (TaskAssignment assignment : task.getAssignments()) {
+                User assignmentUser = assignment.getUser();
+                Long userId = assignmentUser.getId();
+
+                MemberTaskDistributionDTO userDistribution = distributionMap.computeIfAbsent(
+                        userId,
+                        key -> new MemberTaskDistributionDTO(userId, assignmentUser.getUsername())
+                );
+
+                userDistribution.incrementTaskStatus(task.getStatus());
+            }
+        }
+
+        return distributionMap.values().stream()
+                .sorted(Comparator.comparing(MemberTaskDistributionDTO::getUsername))
+                .toList();
     }
 
     public Project findProjectEntityById(Long teamId) {

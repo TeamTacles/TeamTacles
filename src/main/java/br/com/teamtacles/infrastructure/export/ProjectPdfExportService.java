@@ -44,7 +44,7 @@ public class ProjectPdfExportService {
         Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
 
         List<Task> tasksSorted = tasks.stream()
-                .sorted(Comparator.comparingInt((Task task) -> task.getStatus().getValue()).reversed())
+                .sorted(Comparator.comparingInt((Task task) -> task.getEffectiveStatus().getValue()).reversed())
                 .toList();
 
         List<ProjectMember> membersSorted = project.getMembers().stream()

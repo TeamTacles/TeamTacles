@@ -20,5 +20,5 @@ public class ProjectReportDTO {
     private TaskSummaryDTO summary;
 
     @Schema(description = "A ranked list of member performance for the report.")
-    private List<MemberPerformanceDTO> memberPerformanceRanking;
+    private List<MemberTaskDistributionDTO> memberTaskDistribution;
 }

@@ -264,9 +264,10 @@ public class ProjectController {
     @GetMapping("/{projectId}/dashboard")
     public ResponseEntity<ProjectReportDTO> getProjectDashboard(
             @PathVariable Long projectId,
+            @ModelAttribute TaskFilterReportDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser
     ) {
-        ProjectReportDTO report = projectService.getProjectReport(projectId, authenticatedUser.getUser());
+        ProjectReportDTO report = projectService.getProjectReport(projectId, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(report);
     }
 
