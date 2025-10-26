@@ -35,9 +35,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Task> findTasksByUserWithFilters(@Param("userId") Long userId, @Param("filter") TaskFilterReportDTO filter, Pageable pageable);
 
-    @Query("SELECT t FROM Task t WHERE t.project.id = :projectId " +
+    @Query("SELECT DISTINCT t FROM Task t LEFT JOIN t.assignments a WHERE t.project.id = :projectId " + // Adicionado DISTINCT e LEFT JOIN
             "AND ( :#{#filter.title} IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
             "AND ( :#{#filter.status} IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( :#{#filter.assignedUserId} IS NULL OR a.user.id = :#{#filter.assignedUserId} ) " + // <-- LINHA ADICIONADA PARA FILTRAR POR MEMBRO
             "AND ( :#{#filter.isOverdue} IS NULL OR :#{#filter.isOverdue} = false " +
             "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND ( :#{#filter.dueDateAfter} IS NULL OR CAST(t.dueDate AS date) >= :#{#filter.dueDateAfter} ) " +
@@ -47,7 +48,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
             "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Task> findTasksByProjectWithFilters(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter, Pageable pageable);
-
+    
     @Query("SELECT DISTINCT t FROM Task t " +
             "LEFT JOIN FETCH t.assignments a " +
             "LEFT JOIN FETCH a.user u " +
@@ -55,7 +56,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND (:#{#filter.status} IS NULL OR t.status = :#{#filter.status}) " +
             "AND ( :#{#filter.isOverdue} IS NULL OR :#{#filter.isOverdue} = false " +
             "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
-            "AND (:#{#filter.assignedUserId} IS NULL OR a.user.id = :#{#filter.assignedUserId}) " +
+            "AND (:#{#filter.assignedUserId} IS NULL OR EXISTS (SELECT 1 FROM TaskAssignment ta WHERE ta.task = t AND ta.user.id = :#{#filter.assignedUserId})) " +
             "AND (:#{#filter.updatedAtAfter} IS NULL OR CAST(t.updatedAt AS date) >= :#{#filter.updatedAtAfter}) " +
             "AND (:#{#filter.updatedAtBefore} IS NULL OR CAST(t.updatedAt AS date) <= :#{#filter.updatedAtBefore})")
     Set<Task> findTasksByProjectWithFiltersForReport(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter);
