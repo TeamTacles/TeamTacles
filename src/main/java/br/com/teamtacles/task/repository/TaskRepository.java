@@ -48,7 +48,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
             "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Task> findTasksByProjectWithFilters(@Param("projectId") Long projectId, @Param("filter") TaskFilterReportDTO filter, Pageable pageable);
-    
+
     @Query("SELECT DISTINCT t FROM Task t " +
             "LEFT JOIN FETCH t.assignments a " +
             "LEFT JOIN FETCH a.user u " +

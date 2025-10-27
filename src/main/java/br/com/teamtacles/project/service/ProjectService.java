@@ -474,7 +474,7 @@ public class ProjectService {
                         key -> new MemberTaskDistributionDTO(userId, assignmentUser.getUsername())
                 );
 
-                userDistribution.incrementTaskStatus(task.getStatus());
+                userDistribution.incrementTaskStatus(task.getEffectiveStatus());
             }
         }
 
