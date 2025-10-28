@@ -25,9 +25,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT DISTINCT p FROM Project p " +
             "JOIN FETCH p.members m " +
             "WHERE m.user = :user AND m.acceptedInvite = true " +
-            "AND ( :#{#filter.title} IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
-            "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(p.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
-            "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(p.createdAt AS date) <= :#{#filter.createdAtBefore} )")
+            "AND ( COALESCE(:#{#filter.title}, '') = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
+            "AND ( COALESCE(:#{#filter.createdAtAfter}, CAST(NULL AS date)) IS NULL OR CAST(p.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
+            "AND ( COALESCE(:#{#filter.createdAtBefore}, CAST(NULL AS date)) IS NULL OR CAST(p.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Project> findProjectsByUserWithFilters(@Param("user") User user, @Param("filter") ProjectFilterDTO filter, Pageable pageable);
 
     @Query("SELECT DISTINCT p FROM Project p " +

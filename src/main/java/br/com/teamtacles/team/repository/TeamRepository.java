@@ -20,8 +20,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     @Query("SELECT DISTINCT t FROM Team t " +
             "JOIN FETCH t.members m " +
             "WHERE m.user = :user AND m.acceptedInvite = true " +
-            "AND ( :#{#filter.name} IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :#{#filter.name}, '%')) ) " +
-            "AND ( :#{#filter.createdAtAfter} IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
-            "AND ( :#{#filter.createdAtBefore} IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
+            "AND ( COALESCE(:#{#filter.name}, '') = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :#{#filter.name}, '%')) ) " +
+            "AND ( COALESCE(:#{#filter.createdAtAfter}, CAST(NULL AS date)) IS NULL OR CAST(t.createdAt AS date) >= :#{#filter.createdAtAfter} ) " +
+            "AND ( COALESCE(:#{#filter.createdAtBefore}, CAST(NULL AS date)) IS NULL OR CAST(t.createdAt AS date) <= :#{#filter.createdAtBefore} )")
     Page<Team> findTeamsByUserWithFilters(@Param("user") User user, @Param("filter") TeamFilterDTO filter, Pageable pageable);
 }
