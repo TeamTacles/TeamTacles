@@ -238,9 +238,10 @@ public class ProjectController {
     public ResponseEntity<byte[]> exportProjectToPdf(
             @PathVariable Long projectId,
             @ModelAttribute TaskFilterReportDTO filter,
+            @RequestHeader(value = "X-Timezone", required = false, defaultValue = "UTC") String userTimezone,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
 
-        PdfExportResult pdfReport = projectPdfExportService.generateProjectPdf(projectId, authenticatedUser.getUser(), filter);
+        PdfExportResult pdfReport = projectPdfExportService.generateProjectPdf(projectId, authenticatedUser.getUser(), filter, userTimezone);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

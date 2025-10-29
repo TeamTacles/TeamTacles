@@ -178,7 +178,7 @@
             <td>
                 <div class="project-title" th:text="${project.title}">Nome do Projeto</div>
                 <div class="meta-info">
-                    <strong>Criado em:</strong> <span th:text="${#temporals.format(project.createdAt, 'dd/MM/yyyy HH:mm:ss')}">Data</span> |
+                    <strong>Criado em:</strong> <span th:text="${dateTimeFormatter.format(project.createdAt)}">Data</span> |
                     <strong>Dono:</strong> <span th:text="${project.owner.username}">Dono</span>
                 </div>
                 <div th:if="${taskFilter != null}" class="meta-info">
@@ -265,7 +265,7 @@
     </div>
 
     <div class="footer">
-        Relatório gerado por TeamTacles em <span th:text="${#temporals.format(generationDate, 'dd/MM/yyyy HH:mm')}"></span>
+        Relatório gerado por TeamTacles em <span th:text="${dateTimeFormatter.format(generationDate)}"></span>
     </div>
 </div>
 
@@ -312,8 +312,8 @@
                         <span th:case="*">N/A</span>
                     </span>
                 </p>
-                <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd/MM/yyyy HH:mm:ss') : '-----'}">Data</span></p>
-                <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? #temporals.format(task.completedAt, 'dd/MM/yyyy HH:mm:ss') : '-----'}">Data</span></p>
+                <p><strong>Data de Entrega:</strong> <span th:text="${task.dueDate != null ? dateTimeFormatter.format(task.dueDate) : '-----'}">Data</span></p>
+                <p><strong>Concluído em:</strong> <span th:text="${task.completedAt != null ? dateTimeFormatter.format(task.completedAt) : '-----'}">Data</span></p>
             </div>
         </div>
     </div>

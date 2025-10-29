@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -39,7 +41,7 @@ public class ProjectPdfExportService {
         this.projectService = projectService;
     }
 
-    public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterReportDTO taskFilter) {
+    public PdfExportResult generateProjectPdf(Long projectId, User actingUser, TaskFilterReportDTO taskFilter, String userTimezone) {
         Project project = projectService.getProjectByIdForReport(projectId, taskFilter.getAssignedUserId(), actingUser);
         Set<Task> tasks = projectService.findFilteredTasksForProject(projectId, taskFilter);
 
@@ -53,17 +55,28 @@ public class ProjectPdfExportService {
 
         TaskSummaryDTO summary = projectService.calculateTaskSummary(tasks);
 
-        byte[] pdfContent = export(project, summary, membersSorted, tasksSorted, taskFilter);
+        byte[] pdfContent = export(project, summary, membersSorted, tasksSorted, taskFilter, userTimezone);
 
         String filename = ReportFileNameGenerator.gerenateForProject(project);
 
         return new PdfExportResult(pdfContent, filename);
     }
 
-    public byte[] export(Project project, TaskSummaryDTO summary, List<ProjectMember> membersSorted, List<Task> tasksSorted, TaskFilterReportDTO taskFilter) {
+    public byte[] export(Project project, TaskSummaryDTO summary, List<ProjectMember> membersSorted, List<Task> tasksSorted, TaskFilterReportDTO taskFilter, String userTimezone) {
         try {
 
             String logoDataUri = loadLogoAsBase64("static/images/icon.png");
+
+            // Parse user's timezone, fallback to UTC if invalid
+            ZoneId zoneId;
+            try {
+                zoneId = ZoneId.of(userTimezone);
+            } catch (Exception e) {
+                zoneId = ZoneId.of("UTC");
+            }
+
+            // Create formatter with user's timezone
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(zoneId);
 
             Context context = new Context();
             context.setVariable("project", project);
@@ -73,6 +86,7 @@ public class ProjectPdfExportService {
             context.setVariable("taskFilter", taskFilter);
             context.setVariable("logoUrl", logoDataUri);
             context.setVariable("generationDate", OffsetDateTime.now());
+            context.setVariable("dateTimeFormatter", dateTimeFormatter);
 
             String html = templateEngine.process("project-report-template", context);
 
