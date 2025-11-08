@@ -1,7 +1,6 @@
 package br.com.teamtacles.project.validator;
 
 import br.com.teamtacles.common.exception.ResourceAlreadyExistsException;
-import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
 import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.user.model.User;
 import org.springframework.stereotype.Component;

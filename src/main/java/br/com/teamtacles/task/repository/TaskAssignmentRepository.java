@@ -4,7 +4,6 @@ import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 

@@ -3,11 +3,8 @@ package br.com.teamtacles.project.model;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashSet;

@@ -5,7 +5,6 @@ import br.com.teamtacles.project.model.Project;
 import org.springframework.stereotype.Component;
 import br.com.teamtacles.project.model.ProjectMember;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Component

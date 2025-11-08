@@ -1,6 +1,5 @@
 package br.com.teamtacles.project.controller;
 
-import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
 import br.com.teamtacles.orchestration.service.UserAccountService;
@@ -46,7 +45,6 @@ public class ProjectController {
         this.projectPdfExportService = projectPdfExportService;
         this.userAccountService = userAccountService;
     }
-
 
     @Operation(summary = "Create a new project", description = "Creates a new project and sets the authenticated user as the owner.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {

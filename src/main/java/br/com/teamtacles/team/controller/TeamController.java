@@ -1,7 +1,6 @@
 package br.com.teamtacles.team.controller;
 
 import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
-import br.com.teamtacles.common.dto.response.MessageResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
 import br.com.teamtacles.security.UserAuthenticated;
@@ -75,7 +74,6 @@ public class TeamController {
         teamService.inviteMemberByEmail(teamId, dto, authenticatedUser.getUser());
         return ResponseEntity.status(HttpStatus.OK).build();
     }
-
 
     @Operation(summary = "Generate a team invitation link", description = "Generates a shareable link to invite users to a team. Requires ADMIN or OWNER role.")
     @ApiResponses(value = {

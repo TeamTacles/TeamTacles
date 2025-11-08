@@ -23,22 +23,16 @@ public class LoggingAspect {
     // POINTCUTS
     // ===================================================================================
 
-    /**
-     * Pointcut para interceptar todos os métodos na camada de Controller.
-     */
+    // Intercepta todos os métodos dentro dos pacotes de controller
     @Pointcut("within(br.com.teamtacles.*.controller..*)")
     public void controllerPackagePointcut() {}
 
-    /**
-     * Pointcut para interceptar todos os métodos públicos na camada de Service.
-     */
+
+    // Intercepta todos os métodos dentro dos pacotes de service
     @Pointcut("execution(public * br.com.teamtacles.*.service..*(..))")
     public void servicePackagePointcut() {}
 
-    /**
-     * Pointcut que captura a execução de qualquer método anotado com @BusinessActivityLog.
-     * @param businessActivityLog A instância da anotação, permitindo acesso ao seu valor 'action'.
-     */
+    // Intercepta todos os métodos anotados com @BusinessActivityLog
     @Pointcut("@annotation(businessActivityLog)")
     public void businessActivityPointcut(BusinessActivityLog businessActivityLog) {}
 
@@ -47,9 +41,7 @@ public class LoggingAspect {
     // ADVICES
     // ===================================================================================
 
-    /**
-     * Loga a entrada de requisições HTTP na camada de Controller
-     */
+    // Advice que executa ANTES de qualquer método em controllers
     @Before("controllerPackagePointcut()")
     public void logBeforeRequest(JoinPoint joinPoint) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -61,10 +53,7 @@ public class LoggingAspect {
         }
     }
 
-    /**
-     * Advice que executa ANTES de um método anotado com @BusinessActivityLog.
-     * Gera o log de [ACTION] com o usuário e os detalhes da operação.
-     */
+    // Advice que executa ANTES de um método anotado com @BusinessActivityLog.
     @Before("businessActivityPointcut(businessActivityLog)")
     public void logBusinessActivityStart(JoinPoint joinPoint, BusinessActivityLog businessActivityLog) {
         User actingUser = findUserArgument(joinPoint.getArgs());
@@ -76,10 +65,7 @@ public class LoggingAspect {
                 getArgumentDetails(joinPoint.getArgs()));
     }
 
-    /**
-     * Advice que executa APÓS o retorno sucesso de um método anotado com @BusinessActivityLog.
-     * Gera o log de [SUCCESS] com o usuário e o resultado da operação.
-     */
+    // Advice que executa APÓS o retorno bem-sucedido de um método anotado com @BusinessActivityLog
     @AfterReturning(pointcut = "businessActivityPointcut(businessActivityLog)", returning = "result")
     public void logBusinessActivitySuccess(JoinPoint joinPoint, BusinessActivityLog businessActivityLog, Object result) {
         User actingUser = findUserArgument(joinPoint.getArgs());
@@ -91,11 +77,7 @@ public class LoggingAspect {
                 result != null ? result.toString() : "void");
     }
 
-    /**
-     * Log genérico de DEBUG para todos os métodos de serviço.
-     * Ignora os métodos que já têm um log de negócio para evitar duplicidade.
-     *
-     */
+   // Advice que executa APÓS um método anotado com @BusinessActivityLog lançar uma exceção
     @Around("servicePackagePointcut() && !@annotation(br.com.teamtacles.config.aop.BusinessActivityLog)")
     public Object logServiceMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String className = joinPoint.getTarget().getClass().getSimpleName();
@@ -119,13 +101,10 @@ public class LoggingAspect {
     }
 
     // ===================================================================================
-    // MÉTODOS DE APOIO (HELPERS)
+    // MÉTODOS DE APOIO
     // ===================================================================================
 
-    /**
-     * Procura por um argumento do tipo User na lista de argumentos de um método.
-     * @return O objeto User encontrado, ou null se não houver.
-     */
+    // Procura um argumento do tipo User entre os argumentos do método
     private User findUserArgument(Object[] args) {
         return Arrays.stream(args)
                 .filter(User.class::isInstance)
@@ -134,16 +113,13 @@ public class LoggingAspect {
                 .orElse(null);
     }
 
-    /**
-     * Formata os argumentos de um método para uma string legível, ignorando o objeto User.
-     * @return Uma string com os detalhes dos argumentos.
-     */
+    // Gera uma string com os detalhes dos argumentos, omitindo objetos do tipo User
     private String getArgumentDetails(Object[] args) {
         if (args == null || args.length == 0) {
             return "No arguments";
         }
         return Arrays.stream(args)
-                .filter(arg -> !(arg instanceof User)) // Não logamos o objeto User inteiro
+                .filter(arg -> !(arg instanceof User)) // No caso, não logamos o objeto User inteiro
                 .map(arg -> arg != null ? arg.toString() : "null")
                 .collect(Collectors.joining(", "));
     }

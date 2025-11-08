@@ -23,11 +23,8 @@ public class ErrorResponse {
     private String errorMessage;
 
     @Schema(description = "A machine-readable error code for specific error handling.")
-    private String errorCode; // NOVO CAMPO
+    private String errorCode;
 
-    /**
-     * Novo construtor completo com errorCode usando sobrecarga
-     */
     public ErrorResponse(int status, String errorTitle, String errorMessage, String errorCode) {
         this.dateTime = LocalDateTime.now();
         this.status = status;
@@ -35,7 +32,6 @@ public class ErrorResponse {
         this.errorMessage = errorMessage;
         this.errorCode = errorCode;
     }
-
 
     public ErrorResponse(int status, String errorTitle, String errorMessage) {
         this(status, errorTitle, errorMessage, null);

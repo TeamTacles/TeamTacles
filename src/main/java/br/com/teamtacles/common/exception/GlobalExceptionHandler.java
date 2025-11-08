@@ -1,4 +1,5 @@
 package br.com.teamtacles.common.exception;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.DisabledException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

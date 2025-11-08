@@ -1,7 +1,6 @@
 package br.com.teamtacles.project.dto.response;
 
 import br.com.teamtacles.project.enumeration.EProjectRole;
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;

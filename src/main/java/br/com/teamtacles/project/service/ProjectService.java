@@ -15,7 +15,6 @@ import br.com.teamtacles.project.repository.ProjectRepository;
 import br.com.teamtacles.project.validator.*;
 import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import br.com.teamtacles.task.dto.response.TaskSummaryDTO;
-import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.task.repository.TaskRepository;
@@ -111,7 +110,6 @@ public class ProjectService {
         return modelMapper.map(savedProject, ProjectResponseDTO.class);
     }
 
-
     @BusinessActivityLog(action = "Update Project")
     @Transactional
     public ProjectResponseDTO updateProject(Long projectId, ProjectRequestUpdateDTO requestDTO, User actingUser) {
@@ -133,7 +131,6 @@ public class ProjectService {
         Project updatedProject = projectRepository.save(project);
         return modelMapper.map(updatedProject, ProjectResponseDTO.class);
     }
-
 
     @BusinessActivityLog(action = "Update Project Member Role")
     @Transactional
@@ -469,6 +466,7 @@ public class ProjectService {
                 User assignmentUser = assignment.getUser();
                 Long userId = assignmentUser.getId();
 
+                // O métodos computeIfAbsent cria um novo MemberTaskDistributionDTO se o userId não existir no mapa
                 MemberTaskDistributionDTO userDistribution = distributionMap.computeIfAbsent(
                         userId,
                         key -> new MemberTaskDistributionDTO(userId, assignmentUser.getUsername())

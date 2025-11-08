@@ -1,9 +1,6 @@
 package br.com.teamtacles.project.service;
 
-
-import br.com.teamtacles.project.enumeration.EProjectRole; // Adicionado
 import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.project.model.ProjectMember; // Adicionado
 import br.com.teamtacles.project.repository.ProjectMemberRepository;
 import br.com.teamtacles.user.model.User;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,6 +20,7 @@ public class ProjectAuthorizationService {
                 .map(member -> member.isAcceptedInvite())
                 .orElse(false);
     }
+
     public boolean isAdmin(User user, Project project) {
         return projectMemberRepository.findByUserAndProject(user, project)
                 .map(member -> member.getProjectRole().isPrivileged() && member.isAcceptedInvite())
@@ -49,6 +47,4 @@ public class ProjectAuthorizationService {
             throw new AccessDeniedException("Permission denied. Action requires ADMIN or OWNER role for this project.");
         }
     }
-
-
 }

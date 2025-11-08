@@ -1,7 +1,6 @@
 package br.com.teamtacles.project.validator;
 
 import br.com.teamtacles.project.enumeration.EProjectRole;
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import org.springframework.stereotype.Component;
 
 @Component

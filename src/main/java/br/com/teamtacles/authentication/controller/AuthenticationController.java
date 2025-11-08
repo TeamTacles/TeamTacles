@@ -53,7 +53,7 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
-    // --- 3. MÉTODO ATUALIZADO ---
+
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponseDTO> authenticate(@RequestBody AuthenticationDTO request) {
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
@@ -86,6 +86,7 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "404", description = "Token not found",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
+
     @PostMapping("/reset-password")
     public ResponseEntity<MessageResponseDTO> resetPassword(@RequestBody @Valid ResetPasswordDTO request) {
         userService.resetPassword(request.getToken(), request.getNewPassword(), request.getPasswordConfirm());

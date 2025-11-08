@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/verify-account") // URL base (sem /api)
+@RequestMapping("/verify-account")
 @Tag(name = "User Management (Web)", description = "Endpoints for user account verification.")
 public class AccountVerificationWebController {
 
@@ -47,7 +47,7 @@ public class AccountVerificationWebController {
         } catch (ResourceNotFoundException e) {
             // Se o token for inválido, captura o erro e o envia para a página
             model.addAttribute("error", e.getMessage());
-            return "account-verified"; // Renderiza a *mesma* página, mas agora com a mensagem de erro
+            return "account-verified"; // Renderiza a mesa página, mas agora com a mensagem de erro
 
         } catch (RuntimeException e) {
             // Um catch-all para outros erros inesperados

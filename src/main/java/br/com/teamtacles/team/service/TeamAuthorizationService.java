@@ -1,6 +1,5 @@
 package br.com.teamtacles.team.service;
 
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.team.model.Team;
 import br.com.teamtacles.team.model.TeamMember;
 import br.com.teamtacles.user.model.User;

@@ -4,16 +4,12 @@ import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.task.model.TaskAssignment;
 import br.com.teamtacles.team.model.TeamMember;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -139,5 +135,3 @@ public class User {
         return Collections.unmodifiableSet(taskAssignments);
     }
 }
-
-

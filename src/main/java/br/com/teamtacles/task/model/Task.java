@@ -4,7 +4,6 @@ import br.com.teamtacles.project.model.Project;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 

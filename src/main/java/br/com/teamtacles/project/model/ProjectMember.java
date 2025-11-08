@@ -1,12 +1,10 @@
 package br.com.teamtacles.project.model;
 
 import br.com.teamtacles.project.enumeration.EProjectRole;
-import br.com.teamtacles.team.enumeration.ETeamRole;
 import br.com.teamtacles.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

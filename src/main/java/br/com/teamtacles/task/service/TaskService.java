@@ -5,9 +5,7 @@ import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
 import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.project.dto.response.ProjectResponseDTO;
-import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.project.model.Project;
-import br.com.teamtacles.project.model.ProjectMember;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.project.service.ProjectAuthorizationService;
 import br.com.teamtacles.task.dto.request.*;
@@ -205,7 +203,6 @@ public class TaskService {
         taskAuthorizationService.checkEditPermission(actingUser, task);
         taskRepository.delete(task);
     }
-
 
     @Transactional
     public void leaveTask(Long taskId, User actingUser) {

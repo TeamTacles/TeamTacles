@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -79,11 +77,11 @@ public class AuthenticationService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByResetPasswordToken(token)
-                .orElseThrow(() -> new RuntimeException("Token inválido ou já utilizado."));
+                .orElseThrow(() -> new RuntimeException("Invalid token or not found."));
 
         if (user.getResetPasswordTokenExpiry().isBefore(OffsetDateTime.now())) {
             log.warn("[SECURITY] Attempt to use expired reset token. User ID: {}", user.getId());
-            throw new RuntimeException("O link de redefinição de senha expirou.");
+            throw new RuntimeException("Token has expired.");
         }
 
         user.updatePassword(passwordEncoder.encode(newPassword));

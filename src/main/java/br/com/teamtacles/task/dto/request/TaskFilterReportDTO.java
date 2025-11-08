@@ -53,7 +53,6 @@ public class TaskFilterReportDTO {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate createdAtBefore;
 
-
     @Schema(description = "Filter for tasks concluded after this date.", example = "2024-01-01")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate conclusionDateAfter;

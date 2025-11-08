@@ -1,4 +1,4 @@
-package br.com.teamtacles.task.controller; // Verifique e ajuste o pacote se necessário
+package br.com.teamtacles.task.controller;
 
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/tasks")
-@Tag(name = "User Tasks", description = "Endpoints related to tasks specific to the authenticated user.") // Tag descritiva
+@Tag(name = "User Tasks", description = "Endpoints related to tasks specific to the authenticated user.")
 public class UserTaskController {
 
     private final TaskService taskService;
@@ -43,7 +43,7 @@ public class UserTaskController {
             @ModelAttribute TaskFilterReportDTO filter,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser,
             Pageable pageable) {
-        PagedResponse<UserTaskResponseDTO> tasks = taskService.getAllTasksByUser(pageable, filter, authenticatedUser.getUser()); //
+        PagedResponse<UserTaskResponseDTO> tasks = taskService.getAllTasksByUser(pageable, filter, authenticatedUser.getUser());
         return ResponseEntity.ok(tasks);
     }
 }

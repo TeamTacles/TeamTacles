@@ -11,5 +11,4 @@ public class TeamtaclesApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TeamtaclesApplication.class, args);
 	}
-
 }

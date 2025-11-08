@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 
-
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByProject(Pageable pageable, Project project);
     long countByProject(Project project);

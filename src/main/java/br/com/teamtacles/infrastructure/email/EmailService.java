@@ -19,7 +19,6 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-
     @Value("${app.base-url}")
     private String baseUrl;
 
@@ -31,9 +30,7 @@ public class EmailService {
 
     @Async
     public void sendPasswordResetEmail(String to, String resetUrl) {
-        // DIAGNÓSTICO DEFINITIVO: O que está nesta linha?
-        log.info("[DIAGNOSTIC-TEST] Valor de 'resetUrl' recebido pelo EmailService: {}", resetUrl);
-
+        log.info("[DIAGNOSTIC-TEST] Value of 'resetUrl' received by EmailService: {}", resetUrl);
         log.info("[EMAIL-ACTION] Attempting to send 'password-reset-email' to '{}'", to);
 
         try {

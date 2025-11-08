@@ -1,6 +1,5 @@
 package br.com.teamtacles.project.dto.request;
 
-
 import br.com.teamtacles.project.enumeration.EProjectRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;

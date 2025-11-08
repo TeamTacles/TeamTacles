@@ -4,7 +4,6 @@ import br.com.teamtacles.common.exception.EmailAlreadyExistsException;
 import br.com.teamtacles.common.exception.UsernameAlreadyExistsException;
 import br.com.teamtacles.user.dto.request.UserRequestRegisterDTO;
 import br.com.teamtacles.user.dto.request.UserRequestUpdateDTO;
-import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.UserRepository;
 import org.springframework.stereotype.Component;
 

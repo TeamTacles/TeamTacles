@@ -31,9 +31,8 @@ public class ResetPasswordWebController {
         this.authenticationService = authenticationService;
     }
 
-
     @GetMapping
-    public String showResetPasswordForm(@RequestParam String token, Model model) { // ← RENOMEADO
+    public String showResetPasswordForm(@RequestParam String token, Model model) {
         Optional<User> userOpt = userRepository.findByResetPasswordToken(token);
 
         if (userOpt.isEmpty() || userOpt.get().getResetPasswordTokenExpiry().isBefore(OffsetDateTime.now())) {
@@ -48,14 +47,13 @@ public class ResetPasswordWebController {
         return "reset-password-form";
     }
 
-
     @PostMapping
     public String processResetPassword(
-                                        @Valid @ModelAttribute("form") ResetPasswordWebDTO form,
-                                        BindingResult bindingResult,
-                                        RedirectAttributes redirectAttributes,
-                                        Model model) {
-
+            @Valid @ModelAttribute("form") ResetPasswordWebDTO form,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model)
+    {
         // Valida se senhas coincidem
         if (!form.getNewPassword().equals(form.getConfirmPassword())) {
             bindingResult.rejectValue("confirmPassword", "password.mismatch", "As senhas não coincidem.");
@@ -80,7 +78,6 @@ public class ResetPasswordWebController {
             return "redirect:/forgot-password-web?token=" + form.getToken();
         }
     }
-
 
     @GetMapping("/success")
     public String showSuccessPage() {

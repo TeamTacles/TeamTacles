@@ -20,7 +20,6 @@ import org.thymeleaf.context.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -28,7 +27,6 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectPdfExportService {
@@ -67,7 +65,6 @@ public class ProjectPdfExportService {
 
             String logoDataUri = loadLogoAsBase64("static/images/icon.png");
 
-            // Parse user's timezone, fallback to UTC if invalid
             ZoneId zoneId;
             try {
                 zoneId = ZoneId.of(userTimezone);
@@ -75,7 +72,6 @@ public class ProjectPdfExportService {
                 zoneId = ZoneId.of("UTC");
             }
 
-            // Create formatter with user's timezone
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(zoneId);
 
             Context context = new Context();

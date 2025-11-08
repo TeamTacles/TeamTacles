@@ -2,7 +2,6 @@ package br.com.teamtacles.authentication.service;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
-
 import br.com.teamtacles.user.model.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
