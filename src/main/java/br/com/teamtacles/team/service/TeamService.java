@@ -4,7 +4,7 @@ import br.com.teamtacles.config.aop.BusinessActivityLog;
 import br.com.teamtacles.infrastructure.email.EmailService;
 import br.com.teamtacles.team.dto.request.*;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
-import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.common.dto.response.InviteTokenLinkResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamMemberResponseDTO;
 import br.com.teamtacles.team.dto.response.TeamResponseDTO;
 import br.com.teamtacles.team.dto.response.UserTeamResponseDTO;
@@ -25,7 +25,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -217,14 +216,14 @@ public class TeamService {
 
     @BusinessActivityLog(action = "Generate Team Invitation Link")
     @Transactional
-    public InviteLinkResponseDTO generateInvitedLink(Long teamID, User actingUser) {
+    public InviteTokenLinkResponseDTO generateInvitedLink(Long teamID, User actingUser) {
         Team team = findTeamByIdOrThrow(teamID);
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
 
         String token = team.generateInviteLinkToken();
-
         teamRepository.save(team);
-        return new InviteLinkResponseDTO(baseUrl + "/api/team/join?token=" + token,
+
+        return new InviteTokenLinkResponseDTO(token,
             team.getInvitationTokenExpiry());
     }
 

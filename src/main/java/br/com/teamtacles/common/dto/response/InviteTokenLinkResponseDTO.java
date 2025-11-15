@@ -10,11 +10,11 @@ import java.time.OffsetDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(name = "InviteLinkResponseDTO", description = "DTO for invite link response containing the link and its expiration time.")
-public class InviteLinkResponseDTO {
+@Schema(name = "InviteTokenLinkResponseDTO", description = "DTO for invite token response containing the token and its expiration time.")
+public class InviteTokenLinkResponseDTO {
 
-    @Schema(description = "Generated invite link", example = "https://teamtacles.com/invite/abc123def456")
-    private String inviteLink;
+    @Schema(description = "Generated invite token", example = "abc123def456")
+    private String inviteToken;
 
     @Schema(description = "Expiration date and time of the invite link", example = "2024-12-31T23:59:59Z")
     private OffsetDateTime expiresAt;

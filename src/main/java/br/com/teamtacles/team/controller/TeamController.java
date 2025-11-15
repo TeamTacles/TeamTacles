@@ -1,6 +1,6 @@
 package br.com.teamtacles.team.controller;
 
-import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.common.dto.response.InviteTokenLinkResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ErrorResponse;
 import br.com.teamtacles.security.UserAuthenticated;
@@ -78,7 +78,7 @@ public class TeamController {
     @Operation(summary = "Generate a team invitation link", description = "Generates a shareable link to invite users to a team. Requires ADMIN or OWNER role.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Invitation link generated successfully",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = InviteLinkResponseDTO.class))),
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = InviteTokenLinkResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "Forbidden, user lacks permission to generate links",
@@ -87,10 +87,10 @@ public class TeamController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/{teamId}/invite-link")
-    public ResponseEntity<InviteLinkResponseDTO> generateInvitedLink(
+    public ResponseEntity<InviteTokenLinkResponseDTO> generateInvitedLink(
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        InviteLinkResponseDTO inviteLinkDTO = teamService.generateInvitedLink(teamId, authenticatedUser.getUser());
+        InviteTokenLinkResponseDTO inviteLinkDTO = teamService.generateInvitedLink(teamId, authenticatedUser.getUser());
         return ResponseEntity.ok(inviteLinkDTO);
     }
 

@@ -1,6 +1,6 @@
 package br.com.teamtacles.team.service;
 
-import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.common.dto.response.InviteTokenLinkResponseDTO;
 import br.com.teamtacles.common.exception.ResourceAlreadyExistsException;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.infrastructure.email.EmailService;
@@ -256,14 +256,14 @@ public class TeamServiceTest {
             ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
 
             // Act
-            InviteLinkResponseDTO response = teamService.generateInvitedLink(team.getId(), adminUser);
+            InviteTokenLinkResponseDTO response = teamService.generateInvitedLink(team.getId(), adminUser);
 
             // Assert
             verify(teamRepository).save(teamCaptor.capture());
             Team savedTeam = teamCaptor.getValue();
             assertThat(savedTeam.getInvitationToken()).isNotNull().isNotBlank();
             assertThat(savedTeam.getInvitationTokenExpiry()).isNotNull();
-            assertThat(response.getInviteLink()).isEqualTo("http://localhost:8080/api/team/join?token=" + savedTeam.getInvitationToken());
+            assertThat(response.getInviteToken()).isEqualTo(savedTeam.getInvitationToken());
             assertThat(response.getExpiresAt()).isEqualTo(savedTeam.getInvitationTokenExpiry());
         }
 

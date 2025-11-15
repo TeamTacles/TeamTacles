@@ -12,7 +12,7 @@ import br.com.teamtacles.project.dto.response.UserProjectResponseDTO;
 import br.com.teamtacles.infrastructure.export.ProjectPdfExportService;
 import br.com.teamtacles.project.service.ProjectService;
 import br.com.teamtacles.security.UserAuthenticated;
-import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.common.dto.response.InviteTokenLinkResponseDTO;
 import br.com.teamtacles.task.dto.request.TaskFilterReportDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -89,7 +89,7 @@ public class ProjectController {
     @Operation(summary = "Generate a project invitation link", description = "Generates a shareable link to invite users to a project. Requires ADMIN or OWNER role.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Invitation link generated successfully",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = InviteLinkResponseDTO.class))),
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = InviteTokenLinkResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "Forbidden, user lacks permission to generate links",
@@ -98,10 +98,10 @@ public class ProjectController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/{projectId}/invite-link")
-    public ResponseEntity<InviteLinkResponseDTO> generateInvitedLink(
+    public ResponseEntity<InviteTokenLinkResponseDTO> generateInvitedLink(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserAuthenticated authenticatedUser) {
-        InviteLinkResponseDTO inviteLinkDTO = projectService.generateInvitedLink(projectId, authenticatedUser.getUser());
+        InviteTokenLinkResponseDTO inviteLinkDTO = projectService.generateInvitedLink(projectId, authenticatedUser.getUser());
         return ResponseEntity.ok(inviteLinkDTO);
     }
 

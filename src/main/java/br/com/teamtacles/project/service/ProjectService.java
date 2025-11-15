@@ -1,6 +1,6 @@
 package br.com.teamtacles.project.service;
 
-import br.com.teamtacles.common.dto.response.InviteLinkResponseDTO;
+import br.com.teamtacles.common.dto.response.InviteTokenLinkResponseDTO;
 import br.com.teamtacles.common.dto.response.page.PagedResponse;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.common.mapper.PagedResponseMapper;
@@ -290,7 +290,7 @@ public class ProjectService {
 
     @BusinessActivityLog(action = "Generate Project Invitation Link")
     @Transactional
-    public InviteLinkResponseDTO generateInvitedLink(Long projectId, User actingUser) {
+    public InviteTokenLinkResponseDTO generateInvitedLink(Long projectId, User actingUser) {
         Project project = findProjectByIdOrThrow(projectId);
         projectAuthorizationService.checkProjectAdmin(actingUser, project);
 
@@ -298,7 +298,7 @@ public class ProjectService {
 
         projectRepository.save(project);
 
-        return new InviteLinkResponseDTO(baseUrl + "/api/project/join?token=" + token,
+        return new InviteTokenLinkResponseDTO(token,
                 project.getInvitationTokenExpiry());
     }
 
