@@ -20,7 +20,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     Optional<TeamMember> findByInvitationToken(String token);
     long countByTeamAndAcceptedInviteTrue(Team team);
 
-    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team.id = :teamId")
-    List<TeamMember> findByTeamIdWithUser(@Param("teamId") Long teamId);
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team.id = :teamId AND tm.acceptedInvite = true")
+    List<TeamMember> findAcceptedByTeamIdWithUser(@Param("teamId") Long teamId);
 
 }

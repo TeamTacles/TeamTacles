@@ -19,4 +19,7 @@ public class UserResponseDTO{
 
     @Schema(description = "The user's email address.", example = "john.doe@example.com")
     private String email;
+
+    @Schema(description = "User performs onboarding", example = "false")
+    private boolean onboardingCompleted;
 }

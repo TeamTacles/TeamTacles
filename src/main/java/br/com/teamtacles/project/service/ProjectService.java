@@ -158,22 +158,26 @@ public class ProjectService {
 
         Team teamToImport = teamService.findTeamEntityById(teamId);
         teamAuthorizationService.checkTeamMembership(actingUser, teamToImport);
-
        
-        List<TeamMember> teamMembers = teamMemberRepository.findByTeamIdWithUser(teamToImport.getId());
+        List<TeamMember> teamMembers = teamMemberRepository.findAcceptedByTeamIdWithUser(teamToImport.getId());
 
         for (TeamMember teamMember : teamMembers) {
 
-            
-            boolean teamMemberAlreadyInProject = projectMemberRepository.existsByUserAndProject(teamMember.getUser(), project);
+            Optional<ProjectMember> existingMembershipOpt = projectMemberRepository.findByUserAndProject(teamMember.getUser(), project);
 
-            if(!teamMemberAlreadyInProject) {
-                ProjectMember newProjectMembership = new ProjectMember(teamMember.getUser(), project, EProjectRole.MEMBER);
+            if (existingMembershipOpt.isPresent()) {
+                ProjectMember existingMembership = existingMembershipOpt.get();
 
-                if (teamMember.isAcceptedInvite()) {
-                    newProjectMembership.acceptedInvitation();
+                if (existingMembership.isAcceptedInvite()) {
+                    continue;
                 }
 
+                existingMembership.changeRole(EProjectRole.MEMBER);
+                existingMembership.acceptedInvitation();
+                projectMemberRepository.save(existingMembership);
+            } else {
+                ProjectMember newProjectMembership = new ProjectMember(teamMember.getUser(), project, EProjectRole.MEMBER);
+                newProjectMembership.acceptedInvitation();
                 project.addMember(newProjectMembership);
             }
         }
@@ -223,7 +227,7 @@ public class ProjectService {
 
     public Project getProjectByIdForReport(Long projectId, Long userId, User actingUser) {
         Project project = findProjectByIdForReportOrThrow(projectId, userId);
-        projectAuthorizationService.checkProjectAdmin(actingUser, project);
+        projectAuthorizationService.checkProjectMembership(actingUser, project);
         return project;
     }
 

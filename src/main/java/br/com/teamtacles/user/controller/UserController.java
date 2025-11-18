@@ -70,6 +70,22 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userResponseDTO);
     }
 
+    @Operation(summary = "Update onboarding user", description = "Updates onboarding of the currently authenticated user.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated successfully",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized if the user is not authenticated",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Conflict, complete onboarding already done",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/complete-onboarding")
+    ResponseEntity<UserResponseDTO> completeOnboarding(@AuthenticationPrincipal UserAuthenticated authenticatedUser) {
+        UserResponseDTO userResponseDTO = userService.completeOnboarding(authenticatedUser.getUser());
+        return ResponseEntity.status(HttpStatus.OK).body(userResponseDTO);
+    }
+
     @Operation(summary = "Get current user profile", description = "Retrieves the profile information of the currently authenticated user.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {

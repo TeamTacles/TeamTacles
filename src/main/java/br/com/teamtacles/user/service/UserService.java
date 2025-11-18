@@ -15,6 +15,7 @@ import br.com.teamtacles.user.model.User;
 import br.com.teamtacles.user.repository.RoleRepository;
 import br.com.teamtacles.user.repository.UserRepository;
 import br.com.teamtacles.user.validator.*;
+import org.apache.coyote.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -156,6 +157,17 @@ public class UserService {
     @Transactional
     public void deleteUser(User user) {
         userRepository.deleteById(user.getId());
+    }
+
+    @BusinessActivityLog(action = "Update onboarding User")
+    @Transactional
+    public UserResponseDTO completeOnboarding(User user) {
+        if(!user.isOnboardingCompleted()) {
+            user.markOnboardingAsCompleted();
+            User updatedUser = userRepository.save(user);
+            return modelMapper.map(updatedUser, UserResponseDTO.class);
+        } else {
+            throw new ResourceAlreadyExistsException("Onboarding for this user is already complete.");        }
     }
 
     public User findUserEntityById(Long userId) {

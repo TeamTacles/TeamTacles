@@ -98,7 +98,7 @@ public class UserServiceTest {
             when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
                     .thenAnswer(invocation -> {
                         User savedUser = invocation.getArgument(0);
-                        return new UserResponseDTO(1L, savedUser.getUsername(), savedUser.getEmail());
+                        return new UserResponseDTO(1L, savedUser.getUsername(), savedUser.getEmail(), true);
                     });
 
             ArgumentCaptor<User> userArgumentCaptor = ArgumentCaptor.forClass(User.class);
@@ -265,7 +265,7 @@ public class UserServiceTest {
 
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(modelMapper.map(any(User.class), eq(UserResponseDTO.class)))
-                    .thenReturn(new UserResponseDTO(existingUser.getId(), updateDTO.getUsername(), updateDTO.getEmail()));
+                    .thenReturn(new UserResponseDTO(existingUser.getId(), updateDTO.getUsername(), updateDTO.getEmail(), true));
 
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 

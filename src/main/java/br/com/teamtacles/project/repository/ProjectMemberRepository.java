@@ -27,4 +27,5 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     boolean existsByUserAndProject(User user, Project project);
 
+    boolean existsByUserAndProjectAndAcceptedInviteIsFalse(User user, Project project);
 }
