@@ -51,6 +51,13 @@ public class ProjectMember {
         this.projectRole = projectRole;
     }
 
+    @PrePersist
+    public void OnInvite() {
+        if(this.joinedAt == null){
+            this.joinedAt = OffsetDateTime.now();
+        }
+    }
+
     public String generateInvitation() {
         String token = UUID.randomUUID().toString();
 
