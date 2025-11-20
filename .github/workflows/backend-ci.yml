@@ -1,0 +1,35 @@
+name: TeamTacles Backend CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Conceder Permissão ao Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Executar Verificação Completa
+        run: ./mvnw clean verify
+
+      - name: Publicar Relatórios de Teste (caso falhe)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-de-erros
+          path: target/surefire-reports/*.txt
