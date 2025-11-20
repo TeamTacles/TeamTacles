@@ -12,6 +12,7 @@ import br.com.teamtacles.task.dto.request.UpdateTaskStatusRequestDTO;
 import br.com.teamtacles.task.dto.response.TaskResponseDTO;
 import br.com.teamtacles.task.dto.response.TaskUpdateStatusResponseDTO;
 import br.com.teamtacles.task.dto.response.UserAssignmentResponseDTO;
+import br.com.teamtacles.task.enumeration.ETaskRole;
 import br.com.teamtacles.task.enumeration.ETaskStatus;
 import br.com.teamtacles.task.model.Task;
 import br.com.teamtacles.task.model.TaskAssignment;
@@ -33,8 +34,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -717,13 +720,14 @@ public class TaskServiceTest {
         void leaveAllTasks_whenUserHasNoOwnedTasks_shouldNotThrowException() {
             // Arrange
             User userWithNoTasks = TestDataFactory.createUserWithId(99L, "noTasks", "notasks@example.com");
+            Long projectId = 1L;
 
-            when(taskRepository.findAllByOwner(userWithNoTasks)).thenReturn(List.of());
+            when(taskAssignmentRepository.findAllByProjectAndUser(projectId, userWithNoTasks)).thenReturn(Set.of());
 
             // Act & Assert
-            assertDoesNotThrow(() -> taskService.leaveAllTasks(userWithNoTasks));
+            assertDoesNotThrow(() -> taskService.leaveAllTasks(projectId, userWithNoTasks));
 
-            verify(taskRepository).findAllByOwner(userWithNoTasks);
+            verify(taskAssignmentRepository).findAllByProjectAndUser(projectId, userWithNoTasks);
             verify(taskRepository, never()).delete(any(Task.class));
             verify(taskRepository, never()).save(any(Task.class));
         }
@@ -733,18 +737,19 @@ public class TaskServiceTest {
         void leaveAllTasks_whenUserOwnsTaskAlone_shouldDeleteTask() {
             // Arrange
             User owner = TestDataFactory.createValidUser();
+            Long projectId = 1L;
 
             Task task = TestDataFactory.createMockTask(project, owner, OffsetDateTime.now().plusDays(1));
 
-            List<Task> ownedTasks = List.of(task);
+            Set<TaskAssignment> ownedTasksAssigments = task.getAssignments();
 
-            when(taskRepository.findAllByOwner(owner)).thenReturn(ownedTasks);
+            when(taskAssignmentRepository.findAllByProjectAndUser(projectId, owner)).thenReturn(ownedTasksAssigments);
             doNothing().when(taskRepository).delete(any(Task.class));
 
             ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(owner);
+            taskService.leaveAllTasks(projectId, owner);
 
             // Assert
             verify(taskRepository).delete(deleteCaptor.capture());
@@ -757,22 +762,27 @@ public class TaskServiceTest {
             // Arrange
             User owner = TestDataFactory.createValidUser();
             User otherAssignee = TestDataFactory.createUserWithId(2L, "otherAssignee", "other@example.com");
+            Long projectId = 1L;
 
             Task task = TestDataFactory.createMockTask(project, owner, OffsetDateTime.now().plusDays(1));
+
+            TaskAssignment ownerAssignment = new TaskAssignment(task, owner, br.com.teamtacles.task.enumeration.ETaskRole.OWNER);
+            task.addAssigment(ownerAssignment);
 
             // Adicionar outro assignee à tarefa
             TaskAssignment otherAssignment = new TaskAssignment(task, otherAssignee, br.com.teamtacles.task.enumeration.ETaskRole.ASSIGNEE);
             task.addAssigment(otherAssignment);
 
-            List<Task> ownedTasks = List.of(task);
+            Set<TaskAssignment> userAssignments = new HashSet<>();
+            userAssignments.add(ownerAssignment);
 
-            when(taskRepository.findAllByOwner(owner)).thenReturn(ownedTasks);
+            when(taskAssignmentRepository.findAllByProjectAndUser(projectId, owner)).thenReturn(userAssignments);
             when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(owner);
+            taskService.leaveAllTasks(projectId, owner);
 
             // Assert
             verify(taskRepository, atLeast(1)).save(taskCaptor.capture());
@@ -795,6 +805,7 @@ public class TaskServiceTest {
             // Arrange
             User owner = TestDataFactory.createValidUser();
             User otherProjectOwner = TestDataFactory.createUserWithId(2L, "otherOwner", "other@example.com");
+            Long projectId = 1L;
 
             // Criar dois projetos diferentes
             Project project1 = TestDataFactory.createMockProject(owner);
@@ -806,15 +817,15 @@ public class TaskServiceTest {
             // Task no projeto 2 (não pertence ao owner)
             Task taskInProject2 = TestDataFactory.createMockTask(project2, otherProjectOwner, OffsetDateTime.now().plusDays(1));
 
-            List<Task> ownerTasks = List.of(taskInProject1);
+            Set<TaskAssignment> ownerTasksAssigments = taskInProject1.getAssignments();
 
-            when(taskRepository.findAllByOwner(owner)).thenReturn(ownerTasks);
+            when(taskAssignmentRepository.findAllByProjectAndUser(projectId, owner)).thenReturn(ownerTasksAssigments);
             doNothing().when(taskRepository).delete(any(Task.class));
 
             ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(owner);
+            taskService.leaveAllTasks(projectId, owner);
 
             // Assert
             verify(taskRepository).delete(deleteCaptor.capture());
@@ -834,32 +845,50 @@ public class TaskServiceTest {
         void leaveAllTasks_whenUserHasMultipleOwnedTasksInSameProject_shouldProcessAll() {
             // Arrange
             User owner = TestDataFactory.createValidUser();
+            Long projectId = 1L;
+            Project project = TestDataFactory.createMockProject(owner);
+            ReflectionTestUtils.setField(project, "id", projectId);
 
-            // Criar 3 tarefas no mesmo projeto, todas de responsabilidade do owner
             Task task1 = TestDataFactory.createMockTask(project, owner, OffsetDateTime.now().plusDays(1));
             Task task2 = TestDataFactory.createMockTask(project, owner, OffsetDateTime.now().plusDays(2));
             Task task3 = TestDataFactory.createMockTask(project, owner, OffsetDateTime.now().plusDays(3));
 
-            List<Task> ownedTasks = List.of(task1, task2, task3);
+            ReflectionTestUtils.setField(task1, "id", 101L);
+            ReflectionTestUtils.setField(task2, "id", 102L);
+            ReflectionTestUtils.setField(task3, "id", 103L);
 
-            when(taskRepository.findAllByOwner(owner)).thenReturn(ownedTasks);
+            TaskAssignment assignment1 = new TaskAssignment(task1, owner, ETaskRole.OWNER);
+            TaskAssignment assignment2 = new TaskAssignment(task2, owner, ETaskRole.OWNER);
+            TaskAssignment assignment3 = new TaskAssignment(task3, owner, ETaskRole.OWNER);
+
+            task1.addAssigment(assignment1);
+            task2.addAssigment(assignment2);
+            task3.addAssigment(assignment3);
+
+            Set<TaskAssignment> assignments = Set.of(assignment1, assignment2, assignment3);
+
+            when(taskAssignmentRepository.findAllByProjectAndUser(projectId, owner))
+                    .thenReturn(assignments);
+
             doNothing().when(taskRepository).delete(any(Task.class));
 
-            ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
-
             // Act
-            taskService.leaveAllTasks(owner);
+            taskService.leaveAllTasks(projectId, owner);
 
             // Assert
+            ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
+
             verify(taskRepository, times(3)).delete(deleteCaptor.capture());
 
             List<Task> deletedTasks = deleteCaptor.getAllValues();
             assertThat(deletedTasks).hasSize(3);
-            assertThat(deletedTasks).extracting(Task::getId)
+
+            assertThat(deletedTasks)
+                    .extracting(Task::getId)
                     .containsExactlyInAnyOrder(task1.getId(), task2.getId(), task3.getId());
 
-            // Todas as tasks deletadas devem ser do mesmo projeto
-            assertThat(deletedTasks).allMatch(t -> t.getProject().getId().equals(project.getId()));
+            assertThat(deletedTasks)
+                    .allMatch(t -> t.getProject().getId().equals(projectId));
         }
     }
 }

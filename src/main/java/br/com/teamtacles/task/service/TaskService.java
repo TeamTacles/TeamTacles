@@ -248,9 +248,9 @@ public class TaskService {
     }
 
     @Transactional
-    public void leaveAllTasks(User actingUser) {
+    public void leaveAllTasks(Long projectId, User actingUser) {
 
-        List<TaskAssignment> assignments = taskAssignmentRepository.findAllByUser(actingUser);
+        Set<TaskAssignment> assignments = taskAssignmentRepository.findAllByProjectAndUser(projectId, actingUser);
 
         for(TaskAssignment assignment : assignments) {
            Task task = assignment.getTask();
