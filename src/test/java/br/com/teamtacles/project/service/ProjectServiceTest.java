@@ -704,4 +704,167 @@ class ProjectServiceTest {
         }
 
     }
+
+    @Nested
+    @DisplayName("5 - Project Leaving Tests")
+    class ProjectLeavingTests {
+
+        @Test
+        @DisplayName("5.1 - leaveProject_whenRegularMemberLeavesProject_shouldRemoveUserFromProjectAndAllAssignments")
+        void leaveProject_whenRegularMemberLeavesProject_shouldRemoveUserFromProjectAndAllAssignments() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            User regularMember = TestDataFactory.createUserWithId(2L, "regularMember", "member@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+
+            // Adicionar membro regular ao projeto
+            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project, EProjectRole.MEMBER, 200L);
+            project.addMember(regularMembershipInProject);
+
+            assertThat(project.getMembers()).hasSize(2);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectMembership(regularMember, project);
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.leaveProject(projectId, regularMember);
+
+            // Assert
+            verify(projectRepository).findById(projectId);
+            verify(projectAuthorizationService).checkProjectMembership(regularMember, project);
+            verify(projectRepository).save(projectCaptor.capture());
+
+            Project savedProject = projectCaptor.getValue();
+            assertThat(savedProject.getMembers()).hasSize(1);
+            assertThat(savedProject.getMembers()).extracting(ProjectMember::getUser).doesNotContain(regularMember);
+            assertThat(savedProject.getMembers()).extracting(ProjectMember::getUser).contains(owner);
+
+            verify(projectRepository).save(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("5.2 - leaveProject_whenOwnerWithOtherMembersLeaves_shouldTransferOwnershipAndRemoveOwnerFromProject")
+        void leaveProject_whenOwnerWithOtherMembersLeaves_shouldTransferOwnershipAndRemoveOwnerFromProject() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            User adminMember = TestDataFactory.createUserWithId(2L, "adminMember", "admin@example.com");
+            User regularMember = TestDataFactory.createUserWithId(3L, "regularMember", "regular@example.com");
+
+            Project project = TestDataFactory.createMockProject(owner);
+
+            ProjectMember adminMembershipInProject = TestDataFactory.createProjectMember(adminMember, project, EProjectRole.ADMIN, 200L);
+            project.addMember(adminMembershipInProject);
+
+            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project, EProjectRole.MEMBER, 300L);
+            project.addMember(regularMembershipInProject);
+
+            assertThat(project.getMembers()).hasSize(3);
+            assertThat(project.getOwner()).isEqualTo(owner);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectMembership(owner, project);
+            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.leaveProject(projectId, owner);
+
+            // Assert
+            verify(projectRepository).findById(projectId);
+            verify(projectAuthorizationService).checkProjectMembership(owner, project);
+
+            // Verifica que projectMemberRepository.save foi chamado para atualizar novo owner
+            verify(projectMemberRepository).save(any(ProjectMember.class));
+
+            // Verifica que projectRepository.save foi chamado (transferência de ownership + remoção do owner)
+            verify(projectRepository, atLeast(1)).save(projectCaptor.capture());
+
+            Project savedProject = projectCaptor.getValue();
+
+            // Verifica que owner foi removido do projeto
+            assertThat(savedProject.getMembers()).extracting(ProjectMember::getUser).doesNotContain(owner);
+
+            // Verifica que novo owner foi designado (deve ser admin por preferência)
+            assertThat(savedProject.getOwner()).isEqualTo(adminMember);
+        }
+
+        @Test
+        @DisplayName("5.3 - leaveProject_whenOwnerWithNoOtherMembersLeaves_shouldDeleteEntireProject")
+        void leaveProject_whenOwnerWithNoOtherMembersLeaves_shouldDeleteEntireProject() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser(); // ID = 1L
+            Project project = TestDataFactory.createMockProject(owner);
+
+            assertThat(project.getMembers()).hasSize(1);
+            assertThat(project.getOwner()).isEqualTo(owner);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectMembership(owner, project);
+            doNothing().when(projectRepository).delete(any(Project.class));
+
+            // Act
+            projectService.leaveProject(projectId, owner);
+
+            // Assert
+            verify(projectRepository).findById(projectId);
+            verify(projectAuthorizationService).checkProjectMembership(owner, project);
+
+            verify(projectRepository).delete(projectCaptor.capture());
+            assertThat(projectCaptor.getValue()).isEqualTo(project);
+
+            verify(projectRepository, never()).save(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("5.4 - leaveProject_whenUserIsNotMember_shouldThrowAccessDeniedException")
+        void leaveProject_whenUserIsNotMember_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            User owner = TestDataFactory.createValidUser();
+            User nonMember = TestDataFactory.createUserWithId(5L, "nonmember", "nonmember@example.com");
+            Project project = TestDataFactory.createMockProject(owner);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doThrow(new AccessDeniedException("User is not a member of this project"))
+                    .when(projectAuthorizationService).checkProjectMembership(nonMember, project);
+
+            // Act & Assert
+            assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.leaveProject(projectId, nonMember)
+            );
+
+            verify(projectRepository).findById(projectId);
+            verify(projectAuthorizationService).checkProjectMembership(nonMember, project);
+            verify(projectRepository, never()).save(any(Project.class));
+            verify(projectRepository, never()).delete(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("5.5 - leaveProject_whenProjectDoesNotExist_shouldThrowResourceNotFoundException")
+        void leaveProject_whenProjectDoesNotExist_shouldThrowResourceNotFoundException() {
+            // Arrange
+            long nonExistentProjectId = 999L;
+            User actingUser = TestDataFactory.createValidUser();
+
+            when(projectRepository.findById(nonExistentProjectId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> projectService.leaveProject(nonExistentProjectId, actingUser)
+            );
+
+            verify(projectRepository).findById(nonExistentProjectId);
+            verify(projectAuthorizationService, never()).checkProjectMembership(any(User.class), any(Project.class));
+            verify(projectRepository, never()).save(any(Project.class));
+            verify(projectRepository, never()).delete(any(Project.class));
+        }
+
+    }
+
 }
