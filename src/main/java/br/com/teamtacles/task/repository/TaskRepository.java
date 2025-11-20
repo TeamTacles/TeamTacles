@@ -22,8 +22,19 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT DISTINCT t FROM Task t JOIN t.assignments a " +
             "LEFT JOIN FETCH t.project p " +
             "WHERE a.user.id = :userId " +
+            "AND ( :#{#filter.projectId} IS NULL OR t.project.id = :#{#filter.projectId} ) " +
             "AND ( COALESCE(:#{#filter.title}, '') = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
-            "AND ( COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR " +
+            "   ( " +
+            "     (:#{#filter.status?.name()} = 'OVERDUE' " +
+            "      AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE " +
+            "      AND t.dueDate < CURRENT_TIMESTAMP) " +
+            "     OR " +
+            "     (:#{#filter.status?.name()} != 'OVERDUE' " +
+            "      AND t.status = :#{#filter.status} " +
+            "      AND (t.status = br.com.teamtacles.task.enumeration.ETaskStatus.DONE OR t.dueDate IS NULL OR t.dueDate >= CURRENT_TIMESTAMP)) " +
+            "   ) " +
+            ") " +
             "AND ( COALESCE(:#{#filter.isOverdue}, CAST(NULL AS java.lang.Boolean)) IS NULL OR :#{#filter.isOverdue} = false " +
             "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND ( COALESCE(:#{#filter.dueDateAfter}, CAST(NULL AS date)) IS NULL OR CAST(t.dueDate AS date) >= :#{#filter.dueDateAfter} ) " +
@@ -36,7 +47,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     @Query("SELECT DISTINCT t FROM Task t LEFT JOIN t.assignments a WHERE t.project.id = :projectId " +
             "AND ( COALESCE(:#{#filter.title}, '') = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#filter.title}, '%')) ) " +
-            "AND ( COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR t.status = :#{#filter.status} ) " +
+            "AND ( COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR " +
+            "   ( " +
+            "     (:#{#filter.status?.name()} = 'OVERDUE' " +
+            "      AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE " +
+            "      AND t.dueDate < CURRENT_TIMESTAMP) " +
+            "     OR " +
+            "     (:#{#filter.status?.name()} != 'OVERDUE' " +
+            "      AND t.status = :#{#filter.status} " +
+            "      AND (t.status = br.com.teamtacles.task.enumeration.ETaskStatus.DONE OR t.dueDate IS NULL OR t.dueDate >= CURRENT_TIMESTAMP)) " +
+            "   ) " +
+            ") " +
             "AND ( COALESCE(:#{#filter.assignedUserId}, CAST(NULL AS java.lang.Long)) IS NULL OR a.user.id = :#{#filter.assignedUserId} ) " +
             "AND ( COALESCE(:#{#filter.isOverdue}, CAST(NULL AS java.lang.Boolean)) IS NULL OR :#{#filter.isOverdue} = false " +
             "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
@@ -52,7 +73,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "LEFT JOIN FETCH t.assignments a " +
             "LEFT JOIN FETCH a.user u " +
             "WHERE t.project.id = :projectId " +
-            "AND (COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR t.status = :#{#filter.status}) " +
+            "AND ( COALESCE(:#{#filter.status}, CAST(NULL AS br.com.teamtacles.task.enumeration.ETaskStatus)) IS NULL OR " +
+            "   ( " +
+            "     (:#{#filter.status?.name()} = 'OVERDUE' " +
+            "      AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE " +
+            "      AND t.dueDate < CURRENT_TIMESTAMP) " +
+            "     OR " +
+            "     (:#{#filter.status?.name()} != 'OVERDUE' " +
+            "      AND t.status = :#{#filter.status} " +
+            "      AND (t.status = br.com.teamtacles.task.enumeration.ETaskStatus.DONE OR t.dueDate IS NULL OR t.dueDate >= CURRENT_TIMESTAMP)) " +
+            "   ) " +
+            ") " +
             "AND ( COALESCE(:#{#filter.isOverdue}, CAST(NULL AS java.lang.Boolean)) IS NULL OR :#{#filter.isOverdue} = false " +
             "OR  ( :#{#filter.isOverdue} = true AND t.status != br.com.teamtacles.task.enumeration.ETaskStatus.DONE AND t.dueDate IS NOT NULL AND t.dueDate < CURRENT_TIMESTAMP) ) " +
             "AND (COALESCE(:#{#filter.assignedUserId}, CAST(NULL AS java.lang.Long)) IS NULL OR EXISTS (SELECT 1 FROM TaskAssignment ta WHERE ta.task = t AND ta.user.id = :#{#filter.assignedUserId})) " +

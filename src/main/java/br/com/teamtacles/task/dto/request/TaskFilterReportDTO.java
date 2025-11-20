@@ -29,6 +29,9 @@ public class TaskFilterReportDTO {
     @Schema(description = "Filter tasks assigned to a specific user by their ID.", example = "101")
     private Long assignedUserId;
 
+    @Schema(description = "Filter tasks by project ID.", example = "10")
+    private Long projectId;
+
     @Schema(description = "Filter for tasks updated after this date.", example = "2023-01-01")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate updatedAtAfter;

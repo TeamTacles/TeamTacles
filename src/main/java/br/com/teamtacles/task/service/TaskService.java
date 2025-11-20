@@ -345,7 +345,8 @@ public class TaskService {
         taskDto.setId(task.getId());
         taskDto.setTitle(task.getTitle());
         taskDto.setDescription(task.getDescription());
-        taskDto.setTaskStatus(task.getEffectiveStatus());
+        taskDto.setStatus(task.getEffectiveStatus());
+        taskDto.setOriginalStatus(task.getStatus());
         taskDto.setDueDate(task.getDueDate());
         taskDto.setProject(projectDto);
         return taskDto;

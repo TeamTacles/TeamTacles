@@ -23,8 +23,11 @@ public class TaskUpdateStatusResponseDTO {
     @Schema(description = "A detailed description of the task.", example = "Implement the full authentication flow using JWT.")
     private String description;
 
-    @Schema(description = "The current status of the task.", example = "IN_PROGRESS")
+    @Schema(description = "The effective status (visual), possibly OVERDUE.", example = "OVERDUE")
     private ETaskStatus status;
+
+    @Schema(description = "The original database status for logic control.", example = "TO_DO")
+    private ETaskStatus originalStatus;
 
     @Schema(description = "The date and time when the task was created.")
     private OffsetDateTime createdAt;

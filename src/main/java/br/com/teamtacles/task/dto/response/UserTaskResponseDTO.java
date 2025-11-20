@@ -24,8 +24,11 @@ public class UserTaskResponseDTO {
     @Schema(description = "A brief description of the task.", example = "Audit of financial records for the fourth quarter.")
     private String description;
 
-    @Schema(description = "", example = "TO_DO")
-    private ETaskStatus taskStatus;
+    @Schema(description = "The effective status (visual), possibly OVERDUE.", example = "OVERDUE")
+    private ETaskStatus status;
+
+    @Schema(description = "The original database status for logic control.", example = "TO_DO")
+    private ETaskStatus originalStatus;
 
     @Schema(description = "The total number of task in the project.", example = "5")
     private OffsetDateTime dueDate;
