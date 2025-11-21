@@ -254,7 +254,6 @@ public class ProjectService {
         User userToInvite = userService.findUserEntityByEmail(requestDTO.getEmail());
 
         projectInvitationValidator.validateRole(requestDTO.getRole());
-
         projectMembershipValidator.validateNewMember(userToInvite, project);
 
         Optional<ProjectMember> existingMembership = projectMemberRepository.findByUserAndProject(userToInvite, project);
@@ -316,15 +315,24 @@ public class ProjectService {
         Project project = findByInvitationTokenLinkOrThrow(token);
 
         projectTokenValidator.validateInvitationLinkToken(project);
+
         projectMembershipValidator.validateNewMember(actingUser, project);
 
-        ProjectMember newMember = new ProjectMember(actingUser, project, EProjectRole.MEMBER);
-        newMember.acceptedInvitation();
+        Optional<ProjectMember> existingMembership = projectMemberRepository.findByUserAndProject(actingUser, project);
 
-        project.addMember(newMember);
-        projectRepository.save(project);
-
-        return toProjectMemberResponseDTO(newMember);
+        if(existingMembership.isPresent()) {
+            ProjectMember membership = existingMembership.get();
+            membership.acceptedInvitation();
+            membership.changeRole(EProjectRole.MEMBER);
+            projectMemberRepository.save(membership);
+            return toProjectMemberResponseDTO(membership);
+        } else {
+            ProjectMember newMember = new ProjectMember(actingUser, project, EProjectRole.MEMBER);
+            newMember.acceptedInvitation();
+            project.addMember(newMember);
+            projectRepository.save(project);
+            return toProjectMemberResponseDTO(newMember);
+        }
     }
 
     @BusinessActivityLog(action = "Delete Project")

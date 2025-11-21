@@ -176,7 +176,6 @@ public class TeamService {
 
         teamAuthorizationService.checkTeamAdmin(actingUser, team);
         User userToInvite = userService.findUserEntityByEmail(dto.getEmail());
-
         teamMembershipValidator.validateNewMember(userToInvite, team);
 
         Optional<TeamMember> existingMembership = teamMemberRepository.findByUserAndTeam(userToInvite, team);
@@ -239,13 +238,21 @@ public class TeamService {
         teamTokenValidator.validateInvitationLinkToken(team);
         teamMembershipValidator.validateNewMember(actingUser, team);
 
-        TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
-        newMember.acceptedInvitation();
+        Optional<TeamMember> existingMembership = teamMemberRepository.findByUserAndTeam(actingUser, team);
 
-        team.addMember(newMember);
-        teamRepository.save(team);
-
-        return toTeamMemberResponseDTO(newMember);
+        if(existingMembership.isPresent()) {
+            TeamMember membership = existingMembership.get();
+            membership.acceptedInvitation();
+            membership.changeRole(ETeamRole.MEMBER);
+            teamMemberRepository.save(membership);
+            return toTeamMemberResponseDTO(membership);
+        } else {
+            TeamMember newMember = new TeamMember(actingUser, team, ETeamRole.MEMBER);
+            newMember.acceptedInvitation();
+            team.addMember(newMember);
+            teamRepository.save(team);
+            return toTeamMemberResponseDTO(newMember);
+        }
     }
 
     @BusinessActivityLog(action = "Delete Team")
