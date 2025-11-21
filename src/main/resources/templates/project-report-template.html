@@ -304,11 +304,20 @@
             <div class="vertical-divider"></div>
             <div class="task-section date-section">
                 <p><strong>Status:</strong>
-                    <span th:switch="${statusStr}">
+                    <span th:if="${statusStr == 'OVERDUE'}">
+                        <span th:switch="${task.status.name()}">
+                            <span th:case="'TO_DO'">A Fazer</span>
+                            <span th:case="'IN_PROGRESS'">Em Progresso</span>
+                            <span th:case="'DONE'">Concluído</span>
+                            <span th:case="*">Indefinido</span>
+                        </span>
+                        <span> | Atrasado</span>
+                    </span>
+
+                    <span th:unless="${statusStr == 'OVERDUE'}" th:switch="${statusStr}">
                         <span th:case="'DONE'">Concluído</span>
                         <span th:case="'IN_PROGRESS'">Em Progresso</span>
                         <span th:case="'TO_DO'">A Fazer</span>
-                        <span th:case="'OVERDUE'">Atrasado</span>
                         <span th:case="*">N/A</span>
                     </span>
                 </p>
