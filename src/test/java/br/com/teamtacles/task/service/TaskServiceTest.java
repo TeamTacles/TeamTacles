@@ -725,7 +725,7 @@ public class TaskServiceTest {
             when(taskAssignmentRepository.findAllByProjectAndUser(projectId, userWithNoTasks)).thenReturn(Set.of());
 
             // Act & Assert
-            assertDoesNotThrow(() -> taskService.leaveAllTasks(projectId, userWithNoTasks));
+            assertDoesNotThrow(() -> taskService.leaveAllTasksByProject(projectId, userWithNoTasks));
 
             verify(taskAssignmentRepository).findAllByProjectAndUser(projectId, userWithNoTasks);
             verify(taskRepository, never()).delete(any(Task.class));
@@ -749,7 +749,7 @@ public class TaskServiceTest {
             ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(projectId, owner);
+            taskService.leaveAllTasksByProject(projectId, owner);
 
             // Assert
             verify(taskRepository).delete(deleteCaptor.capture());
@@ -782,7 +782,7 @@ public class TaskServiceTest {
             ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(projectId, owner);
+            taskService.leaveAllTasksByProject(projectId, owner);
 
             // Assert
             verify(taskRepository, atLeast(1)).save(taskCaptor.capture());
@@ -825,7 +825,7 @@ public class TaskServiceTest {
             ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);
 
             // Act
-            taskService.leaveAllTasks(projectId, owner);
+            taskService.leaveAllTasksByProject(projectId, owner);
 
             // Assert
             verify(taskRepository).delete(deleteCaptor.capture());
@@ -873,7 +873,7 @@ public class TaskServiceTest {
             doNothing().when(taskRepository).delete(any(Task.class));
 
             // Act
-            taskService.leaveAllTasks(projectId, owner);
+            taskService.leaveAllTasksByProject(projectId, owner);
 
             // Assert
             ArgumentCaptor<Task> deleteCaptor = ArgumentCaptor.forClass(Task.class);

@@ -38,6 +38,6 @@ public class UserAccountService {
     @Transactional
     public void leaveProjectAndTasks(Long projectId, User user) {
         projectService.leaveProject(projectId, user);
-        taskService.leaveAllTasks(projectId, user);
+        taskService.leaveAllTasksByProject(projectId, user);
     }
 }
