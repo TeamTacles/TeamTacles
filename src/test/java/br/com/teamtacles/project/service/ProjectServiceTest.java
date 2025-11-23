@@ -37,6 +37,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import br.com.teamtacles.common.exception.ResourceNotFoundException;
 import br.com.teamtacles.project.dto.request.UpdateMemberRoleProjectRequestDTO;
 import br.com.teamtacles.project.validator.ProjectMembershipActionValidator;
+import br.com.teamtacles.team.service.TeamService;
+import br.com.teamtacles.team.repository.TeamMemberRepository;
+import br.com.teamtacles.team.model.Team;
+import br.com.teamtacles.team.model.TeamMember;
+import br.com.teamtacles.team.enumeration.ETeamRole;
+import br.com.teamtacles.team.service.TeamAuthorizationService;
+import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
@@ -61,6 +68,7 @@ class ProjectServiceTest {
     private EmailService emailService;
     @Mock
     private UserAuthenticated userAuthenticated;
+
     @Mock
     private ModelMapper modelMapper;
     @Mock
@@ -68,6 +76,13 @@ class ProjectServiceTest {
 
     @Mock
     private ProjectMembershipActionValidator projectMembershipActionValidator;
+
+    @Mock
+    private TeamService teamService;
+    @Mock
+    private TeamMemberRepository teamMemberRepository;
+    @Mock
+    private TeamAuthorizationService teamAuthorizationService;
 
     @InjectMocks
     private ProjectService projectService;
@@ -84,7 +99,6 @@ class ProjectServiceTest {
         authenticatedUser = TestDataFactory.createValidUser();
     }
 
-    //pedron depois verificar esse teste juntamente com a entidade project e seu service
     @Test
     @DisplayName("1.1 - createProject should create project with owner as member")
     void createProject_whenValidDataAndAuthenticatedUser_shouldCreateProjectWithOwnerMember() {
@@ -126,7 +140,8 @@ class ProjectServiceTest {
         assertThat(capturedProject.getMembers()).hasSize(1);
         ProjectMember addedMember = capturedProject.getMembers().stream()
                 .findFirst()
-                .orElseThrow();        assertThat(addedMember.getUser()).isEqualTo(authenticatedUser);
+                .orElseThrow();
+        assertThat(addedMember.getUser()).isEqualTo(authenticatedUser);
         assertThat(addedMember.getProjectRole()).isEqualTo(EProjectRole.OWNER);
         assertThat(addedMember.isAcceptedInvite()).isTrue();
         verifyNoInteractions(projectMemberRepository);
@@ -145,8 +160,7 @@ class ProjectServiceTest {
         // Act & Assert
         ResourceAlreadyExistsException thrownException = assertThrows(
                 ResourceAlreadyExistsException.class,
-                () -> projectService.createProject(requestDTO, authenticatedUser)
-        );
+                () -> projectService.createProject(requestDTO, authenticatedUser));
 
         assertThat(thrownException.getMessage()).isEqualTo(expectedErrorMessage);
 
@@ -207,8 +221,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.updateProject(projectId, requestDTO, nonMemberUser)
-            );
+                    () -> projectService.updateProject(projectId, requestDTO, nonMemberUser));
             verify(projectRepository, never()).save(any(Project.class));
         }
 
@@ -232,8 +245,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.updateProject(projectId, requestDTO, regularMemberUser)
-            );
+                    () -> projectService.updateProject(projectId, requestDTO, regularMemberUser));
             verify(projectRepository, never()).save(any(Project.class));
         }
 
@@ -250,8 +262,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> projectService.updateProject(nonExistentProjectId, requestDTO, actingUser)
-            );
+                    () -> projectService.updateProject(nonExistentProjectId, requestDTO, actingUser));
 
             verify(projectAuthorizationService, never()).checkProjectAdmin(any(User.class), any(Project.class));
             verify(projectRepository, never()).save(any(Project.class));
@@ -303,8 +314,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.deleteProject(projectId, adminUser)
-            );
+                    () -> projectService.deleteProject(projectId, adminUser));
 
             verify(projectRepository, never()).delete(any(Project.class));
         }
@@ -320,12 +330,12 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> projectService.deleteProject(nonExistentProjectId, actingUser)
-            );
+                    () -> projectService.deleteProject(nonExistentProjectId, actingUser));
             verify(projectAuthorizationService, never()).checkProjectOwner(any(User.class), any(Project.class));
             verify(projectRepository, never()).delete(any(Project.class));
         }
     }
+
     @Nested
     @DisplayName("4 - Project Member Management Tests")
     class ProjectMemberManagementTests {
@@ -338,7 +348,8 @@ class ProjectServiceTest {
             User inviter = authenticatedUser;
             User invitee = TestDataFactory.createUserWithId(2L, "invitee", "invitee@example.com");
             Project project = TestDataFactory.createMockProject(inviter);
-            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO(invitee.getEmail(), EProjectRole.MEMBER);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory
+                    .createInviteProjectMemberRequestDTO(invitee.getEmail(), EProjectRole.MEMBER);
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
             doNothing().when(projectAuthorizationService).checkProjectAdmin(inviter, project);
@@ -354,7 +365,8 @@ class ProjectServiceTest {
             verify(projectRepository).save(projectCaptor.capture());
             Project capturedProject = projectCaptor.getValue();
 
-            // Verifica se o projeto agora tem 2 membros (o dono original + o novo convidado)
+            // Verifica se o projeto agora tem 2 membros (o dono original + o novo
+            // convidado)
             assertThat(capturedProject.getMembers()).hasSize(2);
 
             ProjectMember newMember = capturedProject.getMembers().stream()
@@ -370,8 +382,7 @@ class ProjectServiceTest {
             verify(emailService).sendProjectInvitationEmail(
                     eq(invitee.getEmail()),
                     eq(project.getTitle()),
-                    eq(newMember.getInvitationToken())
-            );
+                    eq(newMember.getInvitationToken()));
         }
 
         @Test
@@ -382,7 +393,8 @@ class ProjectServiceTest {
             User owner = TestDataFactory.createUserWithId(1L, "owner", "owner@example.com");
             User regularMember = TestDataFactory.createUserWithId(2L, "member", "member@example.com");
             Project project = TestDataFactory.createMockProject(owner);
-            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO("new@example.com", EProjectRole.MEMBER);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory
+                    .createInviteProjectMemberRequestDTO("new@example.com", EProjectRole.MEMBER);
 
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
 
@@ -405,12 +417,14 @@ class ProjectServiceTest {
             User invitee = TestDataFactory.createUserWithId(2L, "invitee", "invitee@example.com");
             Project project = TestDataFactory.createMockProject(owner);
 
-            ProjectMember pendingMember = TestDataFactory.createPendingProjectMember(invitee, project, EProjectRole.MEMBER);
+            ProjectMember pendingMember = TestDataFactory.createPendingProjectMember(invitee, project,
+                    EProjectRole.MEMBER);
             String validToken = pendingMember.getInvitationToken();
 
             when(projectMemberRepository.findByInvitationToken(validToken)).thenReturn(Optional.of(pendingMember));
             doNothing().when(projectTokenValidator).validateInvitationEmailToken(pendingMember);
-            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(projectMemberRepository.save(any(ProjectMember.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             projectService.acceptInvitationFromEmail(validToken);
@@ -425,6 +439,7 @@ class ProjectServiceTest {
 
             verify(projectTokenValidator).validateInvitationEmailToken(pendingMember);
         }
+
         @Test
         @DisplayName("4.4 - acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException")
         void acceptInvitationFromEmail_whenTokenIsInvalid_shouldThrowResourceNotFoundException() {
@@ -434,8 +449,7 @@ class ProjectServiceTest {
             // Act & Assert
             ResourceNotFoundException exception = assertThrows(
                     ResourceNotFoundException.class,
-                    () -> projectService.acceptInvitationFromEmail(invalidToken)
-            );
+                    () -> projectService.acceptInvitationFromEmail(invalidToken));
             assertThat(exception.getMessage()).isEqualTo("Invalid invitation token.");
             verify(projectMemberRepository, never()).save(any(ProjectMember.class));
         }
@@ -459,9 +473,12 @@ class ProjectServiceTest {
             doNothing().when(projectAuthorizationService).checkProjectAdmin(owner, project);
             when(userService.findUserEntityById(memberToUpdate.getId())).thenReturn(memberToUpdate);
             when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
-            when(projectMemberRepository.findByUserAndProject(memberToUpdate, project)).thenReturn(Optional.of(memberToUpdateMembership));
-            doNothing().when(projectMembershipActionValidator).validateRoleUpdate(ownerMembership, memberToUpdateMembership, EProjectRole.ADMIN);
-            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(projectMemberRepository.findByUserAndProject(memberToUpdate, project))
+                    .thenReturn(Optional.of(memberToUpdateMembership));
+            doNothing().when(projectMembershipActionValidator).validateRoleUpdate(ownerMembership,
+                    memberToUpdateMembership, EProjectRole.ADMIN);
+            when(projectMemberRepository.save(any(ProjectMember.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             projectService.updateMemberRole(projectId, memberToUpdate.getId(), requestDTO, owner);
@@ -471,7 +488,8 @@ class ProjectServiceTest {
             ProjectMember savedMember = projectMemberCaptor.getValue();
             assertThat(savedMember.getProjectRole()).isEqualTo(EProjectRole.ADMIN);
             verify(projectAuthorizationService).checkProjectAdmin(owner, project);
-            verify(projectMembershipActionValidator).validateRoleUpdate(ownerMembership, memberToUpdateMembership, EProjectRole.ADMIN);
+            verify(projectMembershipActionValidator).validateRoleUpdate(ownerMembership, memberToUpdateMembership,
+                    EProjectRole.ADMIN);
         }
 
         @Test
@@ -489,7 +507,8 @@ class ProjectServiceTest {
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectAdmin(adminUser, project);
             when(userService.findUserEntityById(owner.getId())).thenReturn(owner);
-            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
+            when(projectMemberRepository.findByUserAndProject(adminUser, project))
+                    .thenReturn(Optional.of(adminMembership));
             when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
             doThrow(new AccessDeniedException("The project OWNER's role cannot be changed."))
                     .when(projectMembershipActionValidator)
@@ -497,8 +516,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.updateMemberRole(projectId, owner.getId(), requestDTO, adminUser)
-            );
+                    () -> projectService.updateMemberRole(projectId, owner.getId(), requestDTO, adminUser));
 
             verify(projectMemberRepository, never()).save(any(ProjectMember.class));
         }
@@ -519,8 +537,10 @@ class ProjectServiceTest {
             doNothing().when(projectAuthorizationService).checkProjectAdmin(owner, project);
             when(userService.findUserEntityById(memberToRemove.getId())).thenReturn(memberToRemove);
             when(projectMemberRepository.findByUserAndProject(owner, project)).thenReturn(Optional.of(ownerMembership));
-            when(projectMemberRepository.findByUserAndProject(memberToRemove, project)).thenReturn(Optional.of(memberToRemoveMembership));
-            doNothing().when(projectMembershipActionValidator).validateDeletion(ownerMembership, memberToRemoveMembership);
+            when(projectMemberRepository.findByUserAndProject(memberToRemove, project))
+                    .thenReturn(Optional.of(memberToRemoveMembership));
+            doNothing().when(projectMembershipActionValidator).validateDeletion(ownerMembership,
+                    memberToRemoveMembership);
             when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
@@ -544,12 +564,14 @@ class ProjectServiceTest {
             User memberUser = TestDataFactory.createUserWithId(2L, "memberUser", "member@example.com");
             Project project = TestDataFactory.createMockProject(owner);
             ProjectMember ownerMembership = project.getMembers().stream().findFirst().get();
-            ProjectMember memberMembership = TestDataFactory.createProjectMember(memberUser, project, EProjectRole.MEMBER, 200L);
+            ProjectMember memberMembership = TestDataFactory.createProjectMember(memberUser, project,
+                    EProjectRole.MEMBER, 200L);
             project.addMember(memberMembership);
             assertThat(project.getMembers()).hasSize(2);
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             when(userService.findUserEntityById(memberUser.getId())).thenReturn(memberUser);
-            when(projectMemberRepository.findByUserAndProject(memberUser, project)).thenReturn(Optional.of(memberMembership));
+            when(projectMemberRepository.findByUserAndProject(memberUser, project))
+                    .thenReturn(Optional.of(memberMembership));
             doNothing().when(projectMembershipActionValidator).validateDeletion(memberMembership, memberMembership);
             when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -582,8 +604,7 @@ class ProjectServiceTest {
 
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.deleteMembershipFromProject(projectId, owner.getId(), owner)
-            );
+                    () -> projectService.deleteMembershipFromProject(projectId, owner.getId(), owner));
 
             verify(projectRepository, never()).save(any(Project.class));
         }
@@ -599,7 +620,8 @@ class ProjectServiceTest {
             ProjectMember member = new ProjectMember(existingMember, project, EProjectRole.MEMBER);
             member.acceptedInvitation();
             project.addMember(member);
-            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO(existingMember.getEmail(), EProjectRole.MEMBER);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory
+                    .createInviteProjectMemberRequestDTO(existingMember.getEmail(), EProjectRole.MEMBER);
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectAdmin(inviter, project);
             when(userService.findUserEntityByEmail(existingMember.getEmail())).thenReturn(existingMember);
@@ -609,8 +631,7 @@ class ProjectServiceTest {
             // Act & Assert
             ResourceAlreadyExistsException exception = assertThrows(
                     ResourceAlreadyExistsException.class,
-                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter)
-            );
+                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter));
             assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
             verify(projectRepository, never()).save(any(Project.class));
             verifyNoInteractions(emailService);
@@ -623,7 +644,8 @@ class ProjectServiceTest {
             User owner = TestDataFactory.createValidUser();
             User invitee = TestDataFactory.createUserWithId(2L, "invitee", "invitee@example.com");
             Project project = TestDataFactory.createMockProject(owner);
-            ProjectMember expiredMember = TestDataFactory.createPendingProjectMember(invitee, project, EProjectRole.MEMBER);
+            ProjectMember expiredMember = TestDataFactory.createPendingProjectMember(invitee, project,
+                    EProjectRole.MEMBER);
             String expiredToken = expiredMember.getInvitationToken();
             when(projectMemberRepository.findByInvitationToken(expiredToken)).thenReturn(Optional.of(expiredMember));
             String expectedErrorMessage = "Invitation token has expired.";
@@ -632,8 +654,7 @@ class ProjectServiceTest {
             // Act & Assert
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.acceptInvitationFromEmail(expiredToken)
-            );
+                    () -> projectService.acceptInvitationFromEmail(expiredToken));
             assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
             verify(projectTokenValidator).validateInvitationEmailToken(expiredMember);
             verify(projectMemberRepository, never()).save(any(ProjectMember.class));
@@ -655,8 +676,10 @@ class ProjectServiceTest {
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectAdmin(adminUser, project);
             when(userService.findUserEntityById(adminUser.getId())).thenReturn(adminUser);
-            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
-            when(projectMemberRepository.findByUserAndProject(adminUser, project)).thenReturn(Optional.of(adminMembership));
+            when(projectMemberRepository.findByUserAndProject(adminUser, project))
+                    .thenReturn(Optional.of(adminMembership));
+            when(projectMemberRepository.findByUserAndProject(adminUser, project))
+                    .thenReturn(Optional.of(adminMembership));
 
             String expectedErrorMessage = "Users cannot change their own role.";
             doThrow(new AccessDeniedException(expectedErrorMessage))
@@ -666,8 +689,7 @@ class ProjectServiceTest {
             // Act & Assert
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.updateMemberRole(projectId, adminUser.getId(), requestDTO, adminUser)
-            );
+                    () -> projectService.updateMemberRole(projectId, adminUser.getId(), requestDTO, adminUser));
             assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
             verify(projectMemberRepository, never()).save(any(ProjectMember.class));
         }
@@ -681,7 +703,8 @@ class ProjectServiceTest {
             String nonExistentEmail = "ghost@example.com";
 
             Project project = TestDataFactory.createMockProject(inviter);
-            InviteProjectMemberRequestDTO requestDTO = TestDataFactory.createInviteProjectMemberRequestDTO(nonExistentEmail, EProjectRole.MEMBER);
+            InviteProjectMemberRequestDTO requestDTO = TestDataFactory
+                    .createInviteProjectMemberRequestDTO(nonExistentEmail, EProjectRole.MEMBER);
 
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectAdmin(inviter, project);
@@ -692,8 +715,7 @@ class ProjectServiceTest {
             // Act & Assert
             ResourceNotFoundException exception = assertThrows(
                     ResourceNotFoundException.class,
-                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter)
-            );
+                    () -> projectService.inviteMemberByEmail(projectId, requestDTO, inviter));
 
             assertThat(exception.getMessage()).isEqualTo(expectedErrorMessage);
 
@@ -719,7 +741,8 @@ class ProjectServiceTest {
             Project project = TestDataFactory.createMockProject(owner);
 
             // Adicionar membro regular ao projeto
-            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project, EProjectRole.MEMBER, 200L);
+            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project,
+                    EProjectRole.MEMBER, 200L);
             project.addMember(regularMembershipInProject);
 
             assertThat(project.getMembers()).hasSize(2);
@@ -755,10 +778,12 @@ class ProjectServiceTest {
 
             Project project = TestDataFactory.createMockProject(owner);
 
-            ProjectMember adminMembershipInProject = TestDataFactory.createProjectMember(adminMember, project, EProjectRole.ADMIN, 200L);
+            ProjectMember adminMembershipInProject = TestDataFactory.createProjectMember(adminMember, project,
+                    EProjectRole.ADMIN, 200L);
             project.addMember(adminMembershipInProject);
 
-            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project, EProjectRole.MEMBER, 300L);
+            ProjectMember regularMembershipInProject = TestDataFactory.createProjectMember(regularMember, project,
+                    EProjectRole.MEMBER, 300L);
             project.addMember(regularMembershipInProject);
 
             assertThat(project.getMembers()).hasSize(3);
@@ -766,7 +791,8 @@ class ProjectServiceTest {
 
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectMembership(owner, project);
-            when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(projectMemberRepository.save(any(ProjectMember.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
             when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
@@ -776,10 +802,12 @@ class ProjectServiceTest {
             verify(projectRepository).findById(projectId);
             verify(projectAuthorizationService).checkProjectMembership(owner, project);
 
-            // Verifica que projectMemberRepository.save foi chamado para atualizar novo owner
+            // Verifica que projectMemberRepository.save foi chamado para atualizar novo
+            // owner
             verify(projectMemberRepository).save(any(ProjectMember.class));
 
-            // Verifica que projectRepository.save foi chamado (transferência de ownership + remoção do owner)
+            // Verifica que projectRepository.save foi chamado (transferência de ownership +
+            // remoção do owner)
             verify(projectRepository, atLeast(1)).save(projectCaptor.capture());
 
             Project savedProject = projectCaptor.getValue();
@@ -798,13 +826,8 @@ class ProjectServiceTest {
             long projectId = 1L;
             User owner = TestDataFactory.createValidUser(); // ID = 1L
             Project project = TestDataFactory.createMockProject(owner);
-
-            assertThat(project.getMembers()).hasSize(1);
-            assertThat(project.getOwner()).isEqualTo(owner);
-
             when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
             doNothing().when(projectAuthorizationService).checkProjectMembership(owner, project);
-            doNothing().when(projectRepository).delete(any(Project.class));
 
             // Act
             projectService.leaveProject(projectId, owner);
@@ -812,11 +835,8 @@ class ProjectServiceTest {
             // Assert
             verify(projectRepository).findById(projectId);
             verify(projectAuthorizationService).checkProjectMembership(owner, project);
-
             verify(projectRepository).delete(projectCaptor.capture());
             assertThat(projectCaptor.getValue()).isEqualTo(project);
-
-            verify(projectRepository, never()).save(any(Project.class));
         }
 
         @Test
@@ -835,8 +855,7 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> projectService.leaveProject(projectId, nonMember)
-            );
+                    () -> projectService.leaveProject(projectId, nonMember));
 
             verify(projectRepository).findById(projectId);
             verify(projectAuthorizationService).checkProjectMembership(nonMember, project);
@@ -856,15 +875,291 @@ class ProjectServiceTest {
             // Act & Assert
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> projectService.leaveProject(nonExistentProjectId, actingUser)
-            );
+                    () -> projectService.leaveProject(nonExistentProjectId, actingUser));
 
             verify(projectRepository).findById(nonExistentProjectId);
             verify(projectAuthorizationService, never()).checkProjectMembership(any(User.class), any(Project.class));
             verify(projectRepository, never()).save(any(Project.class));
             verify(projectRepository, never()).delete(any(Project.class));
         }
-
     }
+    @Nested
+    @DisplayName("6 - Team Import Tests")
+    class TeamImportTests {
 
+        @Test
+        @DisplayName("6.1 - importTeamMembersToProject should import all team members when user is project admin and team member")
+        void importTeamMembersToProject_whenValidPermissions_shouldImportAllTeamMembers() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User projectAdmin = TestDataFactory.createValidUser();
+            User teamMember1 = TestDataFactory.createUserWithId(2L, "member1", "member1@example.com");
+            User teamMember2 = TestDataFactory.createUserWithId(3L, "member2", "member2@example.com");
+            User teamMember3 = TestDataFactory.createUserWithId(4L, "member3", "member3@example.com");
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+            br.com.teamtacles.team.model.Team team = TestDataFactory.createTeam(projectAdmin);
+
+            br.com.teamtacles.team.model.TeamMember tm1 = TestDataFactory.createTeamMember(teamMember1, team, br.com.teamtacles.team.enumeration.ETeamRole.MEMBER);
+            br.com.teamtacles.team.model.TeamMember tm2 = TestDataFactory.createTeamMember(teamMember2, team, br.com.teamtacles.team.enumeration.ETeamRole.ADMIN);
+            br.com.teamtacles.team.model.TeamMember tm3 = TestDataFactory.createTeamMember(teamMember3, team, br.com.teamtacles.team.enumeration.ETeamRole.MEMBER);
+
+            java.util.List<br.com.teamtacles.team.model.TeamMember> teamMembers = java.util.List.of(tm1, tm2, tm3);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(teamId)).thenReturn(team);
+            doNothing().when(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            when(teamMemberRepository.findAcceptedByTeamIdWithUser(teamId)).thenReturn(teamMembers);
+
+            when(projectMemberRepository.findByUserAndProject(teamMember1, project)).thenReturn(Optional.empty());
+            when(projectMemberRepository.findByUserAndProject(teamMember2, project)).thenReturn(Optional.empty());
+            when(projectMemberRepository.findByUserAndProject(teamMember3, project)).thenReturn(Optional.empty());
+
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.importTeamMembersToProject(projectId, teamId, projectAdmin);
+
+            // Assert
+            verify(projectRepository).save(any(Project.class));
+
+            // Verifica que findByUserAndProject foi chamado 3 vezes (uma para cada membro do time)
+            verify(projectMemberRepository).findByUserAndProject(teamMember1, project);
+            verify(projectMemberRepository).findByUserAndProject(teamMember2, project);
+            verify(projectMemberRepository).findByUserAndProject(teamMember3, project);
+
+            verify(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            verify(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            verify(teamMemberRepository).findAcceptedByTeamIdWithUser(teamId);
+        }
+
+        @Test
+        @DisplayName("6.2 - importTeamMembersToProject should skip members already in project with accepted invite")
+        void importTeamMembersToProject_whenMemberAlreadyInProject_shouldSkipThatMember() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User projectAdmin = TestDataFactory.createValidUser();
+            User existingMember = TestDataFactory.createUserWithId(2L, "existing", "existing@example.com");
+            User newMember = TestDataFactory.createUserWithId(3L, "new", "new@example.com");
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+            ProjectMember existingProjectMember = TestDataFactory.createProjectMember(existingMember, project, EProjectRole.ADMIN, 200L);
+            project.addMember(existingProjectMember);
+
+            br.com.teamtacles.team.model.Team team = TestDataFactory.createTeam(projectAdmin);
+            br.com.teamtacles.team.model.TeamMember tm1 = TestDataFactory.createTeamMember(existingMember, team, br.com.teamtacles.team.enumeration.ETeamRole.MEMBER);
+            br.com.teamtacles.team.model.TeamMember tm2 = TestDataFactory.createTeamMember(newMember, team, br.com.teamtacles.team.enumeration.ETeamRole.MEMBER);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(teamId)).thenReturn(team);
+            doNothing().when(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            when(teamMemberRepository.findAcceptedByTeamIdWithUser(teamId)).thenReturn(java.util.List.of(tm1, tm2));
+            when(projectMemberRepository.findByUserAndProject(existingMember, project))
+                    .thenReturn(Optional.of(existingProjectMember));
+            when(projectMemberRepository.findByUserAndProject(newMember, project))
+                    .thenReturn(Optional.empty());
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.importTeamMembersToProject(projectId, teamId, projectAdmin);
+
+            // Assert
+            verify(projectRepository).save(projectCaptor.capture());
+            Project savedProject = projectCaptor.getValue();
+
+            assertThat(savedProject.getMembers()).hasSize(3); // owner + existing (unchanged) + new
+
+            ProjectMember unchangedMember = savedProject.getMembers().stream()
+                    .filter(m -> m.getUser().equals(existingMember))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(unchangedMember.getProjectRole()).isEqualTo(EProjectRole.ADMIN);
+
+            assertThat(savedProject.getMembers())
+                    .extracting(ProjectMember::getUser)
+                    .contains(newMember);
+        }
+
+        @Test
+        @DisplayName("6.3 - importTeamMembersToProject should upgrade pending invite to accepted")
+        void importTeamMembersToProject_whenMemberHasPendingInvite_shouldUpgradeToAccepted() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User projectAdmin = TestDataFactory.createValidUser();
+            User pendingUser = TestDataFactory.createUserWithId(2L, "pending", "pending@example.com");
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+            ProjectMember pendingMember = TestDataFactory.createPendingProjectMember(pendingUser, project, EProjectRole.ADMIN);
+            project.addMember(pendingMember);
+
+            br.com.teamtacles.team.model.Team team = TestDataFactory.createTeam(projectAdmin);
+            br.com.teamtacles.team.model.TeamMember tm = TestDataFactory.createTeamMember(pendingUser, team, br.com.teamtacles.team.enumeration.ETeamRole.MEMBER);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(teamId)).thenReturn(team);
+            doNothing().when(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            when(teamMemberRepository.findAcceptedByTeamIdWithUser(teamId)).thenReturn(java.util.List.of(tm));
+            when(projectMemberRepository.findByUserAndProject(pendingUser, project))
+                    .thenReturn(Optional.of(pendingMember));
+            when(projectMemberRepository.save(any(ProjectMember.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.importTeamMembersToProject(projectId, teamId, projectAdmin);
+
+            // Assert
+            verify(projectMemberRepository).save(projectMemberCaptor.capture());
+            ProjectMember upgradedMember = projectMemberCaptor.getValue();
+
+            assertThat(upgradedMember.isAcceptedInvite()).isTrue();
+            assertThat(upgradedMember.getProjectRole()).isEqualTo(EProjectRole.MEMBER);
+            assertThat(upgradedMember.getInvitationToken()).isNull();
+        }
+
+        @Test
+        @DisplayName("6.4 - importTeamMembersToProject should throw AccessDeniedException when user is not project admin")
+        void importTeamMembersToProject_whenUserIsNotProjectAdmin_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User owner = TestDataFactory.createValidUser();
+            User regularMember = TestDataFactory.createUserWithId(2L, "member", "member@example.com");
+
+            Project project = TestDataFactory.createMockProject(owner);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doThrow(new AccessDeniedException("Permission denied. Action requires ADMIN or OWNER role for this project."))
+                    .when(projectAuthorizationService).checkProjectAdmin(regularMember, project);
+
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.importTeamMembersToProject(projectId, teamId, regularMember)
+            );
+
+            assertThat(exception.getMessage()).contains("ADMIN or OWNER role");
+            verify(projectAuthorizationService).checkProjectAdmin(regularMember, project);
+            verify(teamService, never()).findTeamEntityById(anyLong());
+            verify(projectRepository, never()).save(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("6.5 - importTeamMembersToProject should throw AccessDeniedException when user is not team member")
+        void importTeamMembersToProject_whenUserIsNotTeamMember_shouldThrowAccessDeniedException() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User projectAdmin = TestDataFactory.createValidUser();
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+            br.com.teamtacles.team.model.Team team = TestDataFactory.createTeam(
+                    TestDataFactory.createUserWithId(99L, "teamOwner", "teamowner@example.com")
+            );
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(teamId)).thenReturn(team);
+            doThrow(new AccessDeniedException("Access denied. You are not a member of this team."))
+                    .when(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class,
+                    () -> projectService.importTeamMembersToProject(projectId, teamId, projectAdmin)
+            );
+
+            assertThat(exception.getMessage()).contains("not a member of this team");
+            verify(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            verify(teamMemberRepository, never()).findAcceptedByTeamIdWithUser(anyLong());
+            verify(projectRepository, never()).save(any(Project.class));
+        }
+
+        @Test
+        @DisplayName("6.6 - importTeamMembersToProject should complete successfully when team has no accepted members")
+        void importTeamMembersToProject_whenTeamHasNoMembers_shouldCompleteWithoutError() {
+            // Arrange
+            long projectId = 1L;
+            long teamId = 1L;
+            User projectAdmin = TestDataFactory.createValidUser();
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+            br.com.teamtacles.team.model.Team team = TestDataFactory.createTeam(projectAdmin);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(teamId)).thenReturn(team);
+            doNothing().when(teamAuthorizationService).checkTeamMembership(projectAdmin, team);
+            when(teamMemberRepository.findAcceptedByTeamIdWithUser(teamId)).thenReturn(java.util.Collections.emptyList());
+            when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            projectService.importTeamMembersToProject(projectId, teamId, projectAdmin);
+
+            // Assert
+            verify(projectRepository).save(projectCaptor.capture());
+            Project savedProject = projectCaptor.getValue();
+
+            // Only owner should remain
+            assertThat(savedProject.getMembers()).hasSize(1);
+            assertThat(savedProject.getMembers())
+                    .extracting(ProjectMember::getUser)
+                    .containsOnly(projectAdmin);
+        }
+
+        @Test
+        @DisplayName("6.7 - importTeamMembersToProject should throw ResourceNotFoundException when project not found")
+        void importTeamMembersToProject_whenProjectNotFound_shouldThrowResourceNotFoundException() {
+            // Arrange
+            long nonExistentProjectId = 999L;
+            long teamId = 1L;
+            User actingUser = TestDataFactory.createValidUser();
+
+            when(projectRepository.findById(nonExistentProjectId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            ResourceNotFoundException exception = assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> projectService.importTeamMembersToProject(nonExistentProjectId, teamId, actingUser)
+            );
+
+            assertThat(exception.getMessage()).contains("Project not found");
+            verify(projectRepository).findById(nonExistentProjectId);
+            verify(projectAuthorizationService, never()).checkProjectAdmin(any(User.class), any(Project.class));
+            verify(teamService, never()).findTeamEntityById(anyLong());
+        }
+
+        @Test
+        @DisplayName("6.8 - importTeamMembersToProject should throw ResourceNotFoundException when team not found")
+        void importTeamMembersToProject_whenTeamNotFound_shouldThrowResourceNotFoundException() {
+            // Arrange
+            long projectId = 1L;
+            long nonExistentTeamId = 999L;
+            User projectAdmin = TestDataFactory.createValidUser();
+
+            Project project = TestDataFactory.createMockProject(projectAdmin);
+
+            when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+            doNothing().when(projectAuthorizationService).checkProjectAdmin(projectAdmin, project);
+            when(teamService.findTeamEntityById(nonExistentTeamId))
+                    .thenThrow(new ResourceNotFoundException("Team not found with id: " + nonExistentTeamId));
+
+            // Act & Assert
+            ResourceNotFoundException exception = assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> projectService.importTeamMembersToProject(projectId, nonExistentTeamId, projectAdmin)
+            );
+
+            assertThat(exception.getMessage()).contains("Team not found");
+            verify(teamService).findTeamEntityById(nonExistentTeamId);
+            verify(teamAuthorizationService, never()).checkTeamMembership(any(User.class), any());
+            verify(projectRepository, never()).save(any(Project.class));
+        }
+    }
 }
