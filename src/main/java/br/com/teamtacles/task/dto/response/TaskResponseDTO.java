@@ -36,6 +36,12 @@ public class TaskResponseDTO {
     @Schema(description = "The due date for the task.")
     private OffsetDateTime dueDate;
 
+    @Schema(description = "The date and time when the task was completed.")
+    private OffsetDateTime completedAt;
+
+    @Schema(description = "The completion Comment for the task.", example = "Task completed successfully!")
+    private String completionComment;
+
     @Schema(description = "The ID of the project this task belongs to.", example = "25")
     private Long projectId;
 
